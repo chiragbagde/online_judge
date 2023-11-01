@@ -8,7 +8,7 @@ if (!fs.existsSync(dirInputs)) {
   fs.mkdirSync(dirInputs, { recursive: true });
 }
 
-const generateFile = async (input) => {
+const generateInputFile = async (input) => {
   const fileId = uuid();
   const filename = `${fileId}.txt`;
   const filePath = path.join(dirInputs, filename);
@@ -17,5 +17,5 @@ const generateFile = async (input) => {
 };
 
 module.exports = {
-  generateFile,
+  generateInputFile,
 };

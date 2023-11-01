@@ -5,6 +5,8 @@ const User = require("./models/User");
 var jwt = require("jsonwebtoken");
 var cookieParser = require("cookie-parser");
 const { generateFile } = require("./generateFile");
+const { generateInputFile } = require("./generateInputFile");
+
 const { executeCpp } = require("./executeCpp");
 const cors = require("cors");
 
@@ -93,14 +95,15 @@ app.post("/login", async (req, res) => {
 });
 
 app.post("/run", async (req, res) => {
-  const { lang = "cpp", code } = req.body;
+  const { lang = "cpp", code, input } = req.body;
 
   if (code === undefined) {
     res.status(400).json({ success: false, error: "Empty code body!" });
   }
   const filePath = await generateFile(lang, code);
-  const output = await executeCpp(filePath);
-  res.status(200).json({ output });
+  const inputPath = await generateInputFile(input);
+  const output = await executeCpp(filePath, inputPath);
+  res.status(200).json({ output, filePath, inputPath });
 });
 
 app.listen(5000, () => {
