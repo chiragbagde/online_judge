@@ -15,7 +15,7 @@ const executeCpp = async (filePath, inputPath) => {
 
   return new Promise((resolve, reject) => {
     exec(
-      `g++ ${filePath} -o ${outPath} && cd ${outputPath} && .\\${jobId}.out < ${inputPath}`,
+      `g++ ${filePath} -o ${outPath} && cd ${outputPath} && ./${jobId}.out < ${inputPath}`,
       (error, stdout, stderror) => {
         if (error) {
           reject({ error, stderror });
