@@ -5,7 +5,16 @@ const problem = require("./../models/Problem");
 const router = express.Router();
 
 router.post("/create", async (req, res) => {
-  const { statement, difficulty, topic, solution, input } = req.body;
+  const {
+    statement,
+    difficulty,
+    topic,
+    solution,
+    input,
+    examples,
+    constraints,
+    description,
+  } = req.body;
 
   if (!(statement && difficulty && topic && solution)) {
     return res.status(400).send("Please enter all the information.");
@@ -16,6 +25,9 @@ router.post("/create", async (req, res) => {
     topic,
     solution,
     input,
+    examples,
+    constraints,
+    description,
   });
 
   res.status(200).json({
@@ -83,7 +95,6 @@ router.post("/id", async (req, res) => {
 
   try {
     let customprob = await problem.findOne({ _id: id });
-    console.log(customprob);
 
     res.status(200).json({
       message: "Problem fetched successfully",
