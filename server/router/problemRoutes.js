@@ -13,6 +13,7 @@ router.post("/create", async (req, res) => {
     input,
     examples,
     constraints,
+    competition_problem,
     description,
   } = req.body;
 
@@ -28,6 +29,7 @@ router.post("/create", async (req, res) => {
     examples,
     constraints,
     description,
+    competition_problem,
   });
 
   res.status(200).json({
@@ -37,7 +39,15 @@ router.post("/create", async (req, res) => {
 });
 
 router.post("/update", async (req, res) => {
-  const { statement, difficulty, topic, solution, input, id } = req.body;
+  const {
+    statement,
+    difficulty,
+    topic,
+    solution,
+    competition_problem,
+    input,
+    id,
+  } = req.body;
 
   if (!id) {
     return res.status(400).send("Please enter an id to update");
@@ -66,6 +76,10 @@ router.post("/update", async (req, res) => {
     updatedDoc.input = input;
   }
 
+  if (competition_problem !== undefined) {
+    updatedDoc.competition_problem = competition_problem;
+  }
+
   try {
     let updateprob = await problem.updateOne(filter, updatedDoc);
 
@@ -82,7 +96,7 @@ router.post("/update", async (req, res) => {
 });
 
 router.get("/", async (req, res) => {
-  let problems = await problem.find({});
+  let problems = await problem.find({ competition_problem: false });
 
   res.status(200).json({
     message: "problems retreived successfully!",

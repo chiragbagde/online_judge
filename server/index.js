@@ -5,6 +5,7 @@ const authRoutes = require("./router/authRoutes");
 const codeRoutes = require("./router/codeRoutes");
 const problemRoutes = require("./router/problemRoutes");
 const testCasesRoutes = require("./router/testCasesRoutes");
+const compeitionRoutes = require("./router/competitionRoutes");
 
 const cors = require("cors");
 
@@ -28,6 +29,8 @@ app.use("/api/code", codeRoutes);
 app.use("/api/problems", problemRoutes);
 
 app.use("/api/testcases", testCasesRoutes);
+
+app.use("/api/competition", compeitionRoutes);
 
 app.listen(PORT, () => {
   console.log("Server is running on port 5000!");

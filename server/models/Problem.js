@@ -15,6 +15,8 @@ const exampleSchema = mongoose.Schema({
   },
 });
 
+const Example = mongoose.model("Example", exampleSchema);
+
 const problemSchema = mongoose.Schema({
   statement: {
     type: String,
@@ -48,6 +50,10 @@ const problemSchema = mongoose.Schema({
   image: {
     type: Buffer,
     contentType: String,
+  },
+  competition_problem: {
+    type: Boolean,
+    default: false,
   },
   input: {
     type: String,

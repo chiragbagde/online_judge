@@ -5,7 +5,7 @@ const submission = require("./../models/Submission");
 const router = express.Router();
 
 router.post("/submit", async (req, res) => {
-  const { solution, p_id, u_id } = req.body;
+  const { solution, p_id, u_id, c_id } = req.body;
 
   if (!(p_id && u_id && solution)) {
     return res.status(400).send("Please enter all the information.");
@@ -14,6 +14,7 @@ router.post("/submit", async (req, res) => {
     solution,
     p_id,
     u_id,
+    c_id,
   });
 
   res.status(200).json({

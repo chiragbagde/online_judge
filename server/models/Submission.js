@@ -9,6 +9,11 @@ const submissionSchema = mongoose.Schema({
     type: String,
     ref: "Problem",
   },
+  c_id: {
+    type: String,
+    ref: "Competiton",
+    default: null,
+  },
   verdict: {
     type: String,
   },
