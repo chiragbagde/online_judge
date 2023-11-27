@@ -5,7 +5,7 @@ const competition = require("./../models/Competition");
 const router = express.Router();
 
 router.post("/create", async (req, res) => {
-  const { start_date, end_date, problems } = req.body;
+  const { start_date, end_date, problems, title } = req.body;
 
   if (!(start_date && end_date && problems)) {
     return res.status(400).send("Please enter all the information.");
@@ -14,6 +14,7 @@ router.post("/create", async (req, res) => {
   let l_date = new Date(end_date);
   let newcompetiton = await competition.create({
     problems,
+    title,
     start_date: s_date,
     end_date: l_date,
   });
@@ -55,6 +56,31 @@ router.post("/update", async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating Competition:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+router.post("/registeruser", async (req, res) => {
+  const { user_id, id } = req.body;
+
+  if (!id) {
+    return res.status(400).send("Please enter an id to update");
+  }
+  let competition_id;
+  try {
+    if (user_id !== undefined) {
+      competition_id = await competition.findById(id);
+      competition_id.registerUser(user_id);
+      await competition_id.save();
+    }
+    res.status(200).json({
+      message: "User registered successfully",
+      competition_id,
+    });
+  } catch (error) {
+    console.error("Error registering User:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
