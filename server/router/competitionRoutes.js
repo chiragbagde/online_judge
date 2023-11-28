@@ -1,6 +1,7 @@
 // codeRoutes.js
 const express = require("express");
 const competition = require("./../models/Competition");
+const verifyToken = require("../verifyToken");
 
 const router = express.Router();
 
@@ -87,7 +88,7 @@ router.post("/registeruser", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   let competitions = await competition.find({});
 
   res.status(200).json({
@@ -96,7 +97,7 @@ router.get("/", async (req, res) => {
   });
 });
 
-router.post("/id", async (req, res) => {
+router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   try {
@@ -117,7 +118,7 @@ router.post("/id", async (req, res) => {
   }
 });
 
-router.delete("/", async (req, res) => {
+router.delete("/", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   const del = await competition.deleteOne({ _id: id });

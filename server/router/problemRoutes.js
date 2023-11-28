@@ -1,10 +1,11 @@
 // codeRoutes.js
 const express = require("express");
 const problem = require("./../models/Problem");
+const verifyToken = require("../verifyToken");
 
 const router = express.Router();
 
-router.post("/create", async (req, res) => {
+router.post("/create", verifyToken, async (req, res) => {
   const {
     statement,
     difficulty,
@@ -38,7 +39,7 @@ router.post("/create", async (req, res) => {
   });
 });
 
-router.post("/update", async (req, res) => {
+router.post("/update", verifyToken, async (req, res) => {
   const {
     statement,
     difficulty,
@@ -95,7 +96,7 @@ router.post("/update", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   let problems = await problem.find({ competition_problem: false });
 
   res.status(200).json({
@@ -104,7 +105,7 @@ router.get("/", async (req, res) => {
   });
 });
 
-router.post("/id", async (req, res) => {
+router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   try {
@@ -122,7 +123,7 @@ router.post("/id", async (req, res) => {
   }
 });
 
-router.delete("/", async (req, res) => {
+router.delete("/", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   const del = await problem.deleteOne({ _id: id });

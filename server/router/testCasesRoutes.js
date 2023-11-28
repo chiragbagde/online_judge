@@ -1,10 +1,11 @@
 // codeRoutes.js
 const express = require("express");
 const testcase = require("../models/TestCase");
+const verifyToken = require("../verifyToken");
 
 const router = express.Router();
 
-router.post("/create", async (req, res) => {
+router.post("/create", verifyToken, async (req, res) => {
   const { p_id, input, output } = req.body;
 
   if (!(p_id && input && output)) {
@@ -22,7 +23,7 @@ router.post("/create", async (req, res) => {
   });
 });
 
-router.post("/update", async (req, res) => {
+router.post("/update", verifyToken, async (req, res) => {
   const { p_id, input, output, id } = req.body;
 
   if (!id) {
@@ -59,7 +60,7 @@ router.post("/update", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   let problems = await testcase.find({});
 
   res.status(200).json({
@@ -68,7 +69,7 @@ router.get("/", async (req, res) => {
   });
 });
 
-router.post("/id", async (req, res) => {
+router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   try {
@@ -86,7 +87,7 @@ router.post("/id", async (req, res) => {
   }
 });
 
-router.delete("/", async (req, res) => {
+router.delete("/", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   const del = await testcase.deleteOne({ _id: id });
