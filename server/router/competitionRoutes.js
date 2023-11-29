@@ -101,15 +101,24 @@ router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   try {
-    const fetchedCompetition = await competition
-      .findOne({ _id: id })
-      .populate("problems")
-      .exec();
+    const fetchedCompetition = await competition.findOne({ _id: id });
+    const currentDate = new Date();
 
-    res.status(200).json({
-      message: "Competition fetched successfully",
-      fetchedCompetition,
-    });
+    if (
+      currentDate >= new Date(fetchedCompetition.start_date) &&
+      currentDate <= new Date(fetchedCompetition.end_date)
+    ) {
+      await fetchedCompetition.populate("problems");
+
+      res.status(200).json({
+        message: "Competition fetched successfully",
+        fetchedCompetition,
+      });
+    } else {
+      res.status(403).json({
+        error: "This competition is not currently active",
+      });
+    }
   } catch (error) {
     console.error("Error getting competition:", error.message);
     res.status(500).json({
