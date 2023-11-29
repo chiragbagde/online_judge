@@ -20,11 +20,15 @@ router.post("/run", async (req, res) => {
   const filePath = await generateFile(lang, code);
   const inputPath = await generateInputFile(input);
   const { outPath, jobId } = await generateOutputFile(filePath);
-  const output = await executeCpp(filePath, inputPath, outPath, jobId);
-  deleteFile(filePath);
-  deleteFile(inputPath);
-  deleteFile(outPath);
-  res.status(200).json({ output });
+  try {
+    const output = await executeCpp(filePath, inputPath, outPath, jobId);
+    deleteFile(filePath);
+    deleteFile(inputPath);
+    deleteFile(outPath);
+    res.status(200).json({ output });
+  } catch (e) {
+    console.log(e);
+  }
 });
 
 router.post("/submit", async (req, res) => {

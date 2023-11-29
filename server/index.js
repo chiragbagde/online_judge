@@ -33,5 +33,5 @@ app.use("/api/testcases", testCasesRoutes);
 app.use("/api/competition", compeitionRoutes);
 
 app.listen(PORT, () => {
-  console.log("Server is running on port 5000!");
+  console.log("Server is running on port ", PORT);
 });
