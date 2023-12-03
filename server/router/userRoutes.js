@@ -1,8 +1,5 @@
 // authRoutes.js
 const express = require("express");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
 const User = require("./../models/User");
 const verifyToken = require("../verifyToken");
 

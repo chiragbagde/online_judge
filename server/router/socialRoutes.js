@@ -1,7 +1,10 @@
 // codeRoutes.js
 const express = require("express");
 const social = require("./../models/Social");
+const Image = require("./../models/Image");
 const verifyToken = require("../verifyToken");
+const path = require("path");
+const fs = require("fs");
 
 const router = express.Router();
 
@@ -104,9 +107,24 @@ router.post("/id", verifyToken, async (req, res) => {
   try {
     let socialProfile = await social.findOne({ _id: id }).populate("u_id");
 
+    if (!socialProfile) {
+      return res.status(404).json({ error: "Social profile not found" });
+    }
+
+    const image = await Image.findOne({ u_id: socialProfile.u_id._id });
+
+    const imagePath = path.join(__dirname, "../images/", image.imageUrl);
+    const imageBuffer = fs.readFileSync(imagePath);
+
+    const imageBase64 = imageBuffer.toString("base64");
+
     res.status(200).json({
       message: "Social Profile fetched successfully",
       socialProfile,
+      profileImageBuffer: {
+        img: imageBase64,
+        imgId: image._id,
+      },
     });
   } catch (error) {
     console.error("Error getting social profile:", error.message);
