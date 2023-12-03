@@ -6,6 +6,8 @@ const codeRoutes = require("./router/codeRoutes");
 const problemRoutes = require("./router/problemRoutes");
 const testCasesRoutes = require("./router/testCasesRoutes");
 const compeitionRoutes = require("./router/competitionRoutes");
+const userRoutes = require("./router/userRoutes");
+const socialRoutes = require("./router/socialRoutes");
 
 const cors = require("cors");
 
@@ -31,6 +33,10 @@ app.use("/api/problems", problemRoutes);
 app.use("/api/testcases", testCasesRoutes);
 
 app.use("/api/competition", compeitionRoutes);
+
+app.use("/api/social-profile", socialRoutes);
+
+// app.user("/api/users", userRoutes);
 
 app.listen(PORT, () => {
   console.log("Server is running on port ", PORT);
