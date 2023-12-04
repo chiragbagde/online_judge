@@ -38,6 +38,8 @@ router.post("/create", verifyToken, async (req, res) => {
   }
 });
 
+const updateSocial = () => {};
+
 router.post("/update", verifyToken, async (req, res) => {
   const { website, github, twitter, instagram, facebook, linkedin, u_id, id } =
     req.body;
@@ -114,9 +116,15 @@ router.post("/id", verifyToken, async (req, res) => {
     const image = await Image.findOne({ u_id: socialProfile.u_id._id });
 
     const imagePath = path.join(__dirname, "../images/", image.imageUrl);
-    const imageBuffer = fs.readFileSync(imagePath);
+    let imageBase64;
+    try {
+      const imageBuffer = fs.readFileSync(imagePath);
 
-    const imageBase64 = imageBuffer.toString("base64");
+      imageBase64 = "data:image/jpeg;base64," + imageBuffer.toString("base64");
+    } catch (e) {
+      console.log("file does not exists");
+      imageBase64 = undefined;
+    }
 
     res.status(200).json({
       message: "Social Profile fetched successfully",

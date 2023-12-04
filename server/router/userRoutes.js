@@ -19,4 +19,25 @@ router.post("/user-profile", verifyToken, async (req, res) => {
   }
 });
 
+router.post("/update", verifyToken, async (req, res) => {
+  try {
+    const { id, user } = req.body;
+
+    const filter = { _id: id };
+    console.log(user);
+
+    let updateUser = await User.updateOne(filter, user);
+
+    if (!updateUser) {
+      return res.status(400).send("User not found.");
+    }
+    res.status(200).json({
+      message: "User updated successfully",
+      updateUser,
+    });
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
 module.exports = router;

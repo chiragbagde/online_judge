@@ -39,6 +39,8 @@ app.use("/api/problems", problemRoutes);
 
 app.use("/api/images", imageRoutes);
 
+app.use("/api/users", userRoutes);
+
 app.listen(PORT, () => {
   console.log("Server is running on port ", PORT);
 });
