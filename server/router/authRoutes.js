@@ -2,7 +2,6 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
 const User = require("./../models/User");
 
 const router = express.Router();
@@ -58,7 +57,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id, email }, process.env.SECRET_KEY, {
-      expiresIn: "1hrs",
+      expiresIn: "2hrs",
     });
     user.token = token;
     user.password = undefined;
