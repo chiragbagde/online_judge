@@ -89,27 +89,55 @@ router.post("/update-role", verifyToken, async (req, res) => {
 });
 
 router.post("/create", async (req, res) => {
-  const { firstname, lastname, email, role } = req.body;
+  const { firstname, lastname, email, role, mobile, username, password } =
+    req.body;
   if (!(firstname && lastname && email && role)) {
     return res.status(400).send("Please enter all the information.");
   }
-  const password = "Test@123";
+  const defaultPassword = "Test@123";
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     return res.status(400).send("User already exists!");
   }
-  const hashedPassword = await bcrypt.hash(password, 10);
+
+  let hashedPassword;
+  if (!password) {
+    hashedPassword = await bcrypt.hash(password, 10);
+  } else {
+    hashedPassword = await bcrypt.hash(defaultPassword, 10);
+  }
 
   let user = await User.create({
     firstname,
     lastname,
     email,
+    mobile,
+    username,
     password: hashedPassword,
   });
 
   res.status(200).json({
     message: "You created successfully!",
     user,
+  });
+});
+
+router.get("/admin/:id", async (req, res) => {
+  const id = req.params.id;
+  console.log("user id ", id);
+
+  const admin = await User.findOne({ _id: id });
+  if (admin.role !== "admin") {
+    res.status(400).json({
+      message: "Couldn't fetch data",
+    });
+  }
+
+  let users = await User.find().select(["firstname", "lastname"]);
+
+  res.status(200).json({
+    message: "problems retreived successfully!",
+    users,
   });
 });
 

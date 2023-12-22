@@ -1,6 +1,8 @@
 // codeRoutes.js
 const express = require("express");
 const competition = require("./../models/Competition");
+const problem = require("./../models/Problem");
+const user = require("./../models/User");
 const verifyToken = require("../verifyToken");
 
 const router = express.Router();
@@ -22,7 +24,7 @@ router.post("/create", async (req, res) => {
 
   res.status(200).json({
     message: "You have added a new competition!",
-    newcompetiton,
+    competiton: newcompetiton,
   });
 });
 
@@ -127,8 +129,10 @@ router.post("/id", verifyToken, async (req, res) => {
   }
 });
 
-router.delete("/", verifyToken, async (req, res) => {
-  const { id } = req.body;
+router.delete("/:id", verifyToken, async (req, res) => {
+  const id = req.params.id;
+
+  console.log(id);
 
   const del = await competition.deleteOne({ _id: id });
 

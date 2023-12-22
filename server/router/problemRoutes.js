@@ -1,6 +1,7 @@
 // codeRoutes.js
 const express = require("express");
 const problem = require("./../models/Problem");
+const user = require("./../models/User");
 const verifyToken = require("../verifyToken");
 
 const router = express.Router();
@@ -18,7 +19,7 @@ router.post("/create", verifyToken, async (req, res) => {
     description,
   } = req.body;
 
-  if (!(statement && difficulty && topic && solution)) {
+  if (!(statement && difficulty && topic)) {
     return res.status(400).send("Please enter all the information.");
   }
   let newprob = await problem.create({
@@ -123,8 +124,8 @@ router.post("/id", verifyToken, async (req, res) => {
   }
 });
 
-router.delete("/", verifyToken, async (req, res) => {
-  const { id } = req.body;
+router.delete("/:id", verifyToken, async (req, res) => {
+  const id = req.params.id;
 
   const del = await problem.deleteOne({ _id: id });
 
@@ -138,6 +139,24 @@ router.delete("/", verifyToken, async (req, res) => {
       del,
     });
   }
+});
+
+router.get("/admin/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const admin = await user.findOne({ _id: id });
+  if (admin.role !== "admin") {
+    res.status(400).json({
+      message: "Couldn't fetch data",
+    });
+  }
+
+  let problems = await problem.find().select(["statement", ["topic"]]);
+
+  res.status(200).json({
+    message: "problems retreived successfully!",
+    problems,
+  });
 });
 
 module.exports = router;

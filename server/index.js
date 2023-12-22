@@ -31,7 +31,7 @@ app.use("/api/code", codeRoutes);
 
 app.use("/api/testcases", testCasesRoutes);
 
-app.use("/api/competition", compeitionRoutes);
+app.use("/api/competitions", compeitionRoutes);
 
 app.use("/api/social-profile", socialRoutes);
 
