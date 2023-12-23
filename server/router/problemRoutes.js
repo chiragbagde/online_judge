@@ -151,6 +151,24 @@ router.get("/admin/:id", async (req, res) => {
     });
   }
 
+  let problems = await problem.find();
+
+  res.status(200).json({
+    message: "problems retreived successfully!",
+    problems,
+  });
+});
+
+router.get("/admin/ids/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const admin = await user.findOne({ _id: id });
+  if (admin.role !== "admin") {
+    res.status(400).json({
+      message: "Couldn't fetch data",
+    });
+  }
+
   let problems = await problem.find().select(["statement", ["topic"]]);
 
   res.status(200).json({
