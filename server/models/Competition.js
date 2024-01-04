@@ -18,17 +18,29 @@ const CompetitionSchema = mongoose.Schema({
       ref: Problem,
     },
   ],
-  user: [
+  users: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: User,
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: User,
+      },
+      timestamp: {
+        type: Date,
+        default: Date.now,
+      },
     },
   ],
 });
 
 CompetitionSchema.methods.registerUser = function (userId) {
-  if (!this.user.includes(userId)) {
-    this.user.push(userId);
+  const isUserRegistered = this.users?.some((user) =>
+    user.userId.equals(userId)
+  );
+
+  if (!isUserRegistered) {
+    this.users = this.users || [];
+
+    this.users.push({ userId: userId, timestamp: new Date() });
   }
 };
 
