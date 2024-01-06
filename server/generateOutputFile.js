@@ -9,7 +9,7 @@ if (!fs.existsSync(outputPath)) {
 
 const generateOutputFile = async (filePath) => {
   const jobId = path.basename(filePath).split(".")[0];
-  const outPath = path.join(outputPath, `${jobId}.out`);
+  const outPath = path.join(outputPath, `${jobId}.exe`);
 
   return { outPath, jobId };
 };

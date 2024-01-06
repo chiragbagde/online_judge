@@ -7,7 +7,7 @@ const outputPath = path.join(__dirname, "outputs");
 const executeCpp = async (filePath, inputPath, outPath, jobId) => {
   return new Promise((resolve, reject) => {
     exec(
-      `g++ ${filePath} -o ${outPath} && cd ${outputPath} && ./${jobId}.out`,
+      `g++ ${filePath} -o ${outPath} && cd ${outputPath} && .\\${jobId}.exe`,
       (error, stdout, stderror) => {
         if (error) {
           reject({ error, stderror });
