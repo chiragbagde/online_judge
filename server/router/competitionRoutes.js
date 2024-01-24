@@ -4,6 +4,8 @@ const competition = require("./../models/Competition");
 const problem = require("./../models/Problem");
 const user = require("./../models/User");
 const verifyToken = require("../verifyToken");
+const Submission = require("../models/Submission");
+const User = require("./../models/User");
 
 const router = express.Router();
 
@@ -97,6 +99,113 @@ router.get("/", verifyToken, async (req, res) => {
     message: "competitions retreived successfully!",
     competitions,
   });
+});
+
+router.post("/problem/id", verifyToken, async (req, res) => {
+  const { id } = req.body;
+
+  try {
+    let customprob = await problem.findOne({ _id: id });
+
+    res.status(200).json({
+      message: "Problem fetched successfully",
+      customprob,
+    });
+  } catch (error) {
+    console.error("Error getting problem:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+router.post("/timestamp", verifyToken, async (req, res) => {
+  const { id, userId } = req.body;
+
+  try {
+    const fetchedCompetition = await competition.findOne({ _id: id });
+    const user = fetchedCompetition.users.filter(
+      (user) => String(user.userId) === userId
+    )[0];
+    console.log(fetchedCompetition, user);
+    res.status(200).json({
+      timestamp: user.timestamp,
+    });
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+router.post("/getusersubmisions", verifyToken, async (req, res) => {
+  const { u_id, c_id, verdict } = req.body;
+
+  try {
+    const submissions = await Submission.find({
+      u_id,
+      c_id,
+      verdict,
+    });
+
+    console.log('Submissions with "passed" verdict:', submissions);
+    res.status(200).json({
+      submissions: submissions,
+    });
+  } catch (error) {
+    console.error("Error retrieving submissions:", error);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+router.post("/getleaderboard", async (req, res) => {
+  const { c_id } = req.body;
+
+  try {
+    const leaderboard = await Submission.aggregate([
+      { $match: { c_id: c_id, verdict: "passed" } },
+      { $group: { _id: "$u_id", totalScore: { $sum: 1 } } },
+      { $sort: { totalScore: -1 } },
+    ]).exec();
+
+    const populatedLeaderboard = await Promise.all(
+      leaderboard.map(async (entry) => {
+        const userData = await User.findById(entry._id);
+        return { user: userData, totalScore: entry.totalScore };
+      })
+    );
+
+    res.status(200).json({
+      leaderboard: populatedLeaderboard,
+    });
+  } catch (error) {
+    console.error("Error retrieving leaderboard:", error);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+router.post("/getallsubmisions", async (req, res) => {
+  const { c_id } = req.body;
+
+  try {
+    const submissions = await Submission.find({
+      c_id,
+    }).populate("u_id");
+
+    res.status(200).json({
+      submissions: submissions,
+    });
+  } catch (error) {
+    console.error("Error retrieving submissions:", error);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
 });
 
 router.post("/id", verifyToken, async (req, res) => {

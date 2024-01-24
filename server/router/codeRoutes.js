@@ -33,7 +33,7 @@ router.post("/run", async (req, res) => {
 });
 
 router.post("/submit", async (req, res) => {
-  const { lang = "cpp", code, p_id, u_id } = req.body;
+  const { lang = "cpp", code, p_id, u_id, c_id } = req.body;
 
   if (code === undefined) {
     res.status(400).json({ success: false, error: "Empty code body!" });
@@ -44,7 +44,6 @@ router.post("/submit", async (req, res) => {
 
     const verifyTestCases = async () => {
       const failedTestCases = [];
-
       const promises = filtered_testcase.input.map(async (input, index) => {
         const output = filtered_testcase.output[index];
         const filePath = await generateFile(lang, code);
@@ -79,6 +78,7 @@ router.post("/submit", async (req, res) => {
     let submission_body = {
       u_id,
       p_id,
+      c_id,
       language: lang,
       verdict: "failed",
       submitted_at: new Date(),
