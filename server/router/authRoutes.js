@@ -7,8 +7,8 @@ const User = require("./../models/User");
 const router = express.Router();
 
 router.post("/register", async (req, res) => {
-  const { firstname, lastname, email, password } = req.body;
-  if (!(firstname && lastname && email && password)) {
+  const { firstname, lastname, email, password, username } = req.body;
+  if (!(firstname && lastname && email && password && username)) {
     return res.status(400).send("Please enter all the information.");
   }
   const existingUser = await User.findOne({ email });
@@ -21,11 +21,12 @@ router.post("/register", async (req, res) => {
     firstname,
     lastname,
     email,
+    username,
     password: hashedPassword,
   });
 
   const token = jwt.sign({ id: user._id, email }, process.env.SECRET_KEY, {
-    expiresIn: "1hrs",
+    expiresIn: "3hrs",
   });
   user.token = token;
   user.password = undefined;
@@ -57,7 +58,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id, email }, process.env.SECRET_KEY, {
-      expiresIn: "2hrs",
+      expiresIn: "3hrs",
     });
     user.token = token;
     user.password = undefined;

@@ -22,7 +22,7 @@ router.post("/run", async (req, res) => {
   const { outPath, jobId } = await generateOutputFile(filePath);
 
   try {
-    const output = await executeCpp(filePath, inputPath, outPath, jobId);
+    const output = await executeCpp(filePath, inputPath);
     deleteFile(filePath);
     deleteFile(inputPath);
     deleteFile(outPath);

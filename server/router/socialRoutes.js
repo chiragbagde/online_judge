@@ -104,20 +104,22 @@ router.get("/", verifyToken, async (req, res) => {
 });
 
 router.post("/id", verifyToken, async (req, res) => {
-  const { id } = req.body;
+  const { u_id } = req.body;
 
   try {
-    let socialProfile = await social.findOne({ _id: id }).populate("u_id");
+    let socialProfile = await social.findOne({ u_id: u_id }).populate("u_id");
 
     if (!socialProfile) {
-      return res.status(404).json({ error: "Social profile not found" });
+      socialProfile = await social.create({ u_id: u_id });
+      await socialProfile.save();
+      socialProfile = socialProfile.populate("u_id");
     }
+    let image, imageBase64;
 
-    const image = await Image.findOne({ u_id: socialProfile.u_id._id });
-
-    const imagePath = path.join(__dirname, "../images/", image.imageUrl);
-    let imageBase64;
     try {
+      image = await Image.findOne({ u_id: u_id });
+
+      const imagePath = path.join(__dirname, "../images/", image.imageUrl);
       const imageBuffer = fs.readFileSync(imagePath);
 
       imageBase64 = "data:image/jpeg;base64," + imageBuffer.toString("base64");
@@ -131,7 +133,7 @@ router.post("/id", verifyToken, async (req, res) => {
       socialProfile,
       profileImageBuffer: {
         img: imageBase64,
-        imgId: image._id,
+        imgId: image?._id,
       },
     });
   } catch (error) {

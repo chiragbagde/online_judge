@@ -34,17 +34,17 @@ router.post("/upload", verifyToken, upload.single("file"), async (req, res) => {
 
 router.post("/update", verifyToken, upload.single("file"), async (req, res) => {
   try {
-    const { id, u_id } = req.body;
-    if (!id) {
+    const { u_id } = req.body;
+    if (!u_id) {
       return res.status(400).send("Please enter an id to update");
     }
     console.log(req.file.filename);
 
-    const filter = { _id: id };
+    const filter = { u_id: u_id };
     const updatedDoc = {};
 
-    if (id !== undefined) {
-      updatedDoc.id = id;
+    if (u_id !== undefined) {
+      updatedDoc.u_id = u_id;
     }
 
     if (req.file.filename !== undefined) {
