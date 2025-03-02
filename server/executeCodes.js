@@ -29,6 +29,24 @@ const executeCpp = async (filePath, inputPath) => {
   });
 };
 
+const executePython = async(filePath, inputPath) => {
+  return new Promise((resolve, reject) => {
+    exec(
+      `python3 ${filePath} < ${inputPath}`,
+      (error, stdout, stderror) => {
+        if(error) {
+          reject({error, stderror});
+        }
+        if(stderror){
+          reject(stderror);
+        }
+        resolve(stdout);
+      }
+    )
+  })
+}
+
 module.exports = {
   executeCpp,
+  executePython
 };

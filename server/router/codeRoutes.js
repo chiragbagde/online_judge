@@ -2,7 +2,7 @@
 const express = require("express");
 const { generateFile } = require("../generateFile");
 const { generateInputFile } = require("../generateInputFile");
-const { executeCpp } = require("../executeCpp");
+const { executeCpp, executePython } = require("../executeCodes");
 const { generateOutputFile } = require("../generateOutputFile");
 const { deleteFile } = require("../deleteFile");
 const testcase = require("../models/TestCase");
@@ -19,16 +19,26 @@ router.post("/run", async (req, res) => {
   }
   const filePath = await generateFile(lang, code);
   const inputPath = await generateInputFile(input);
-  const { outPath, jobId } = await generateOutputFile(filePath);
 
   try {
-    const output = await executeCpp(filePath, inputPath);
+    let output;
+    if(lang === "cpp"){
+      const { outPath } = await generateOutputFile(filePath);
+      output = await executeCpp(filePath, inputPath);
+      deleteFile(outPath);
+    }else if(lang === "python"){
+      output = await executePython(filePath, inputPath);
+    }else {
+      return res.status(400).json({success: false, error: "Unsupported language!"})
+    }
+
     deleteFile(filePath);
     deleteFile(inputPath);
-    deleteFile(outPath);
+
     res.status(200).json({ output });
   } catch (e) {
     console.log(e);
+    res.status(500).json({ success: false, error: e.error });
   }
 });
 
@@ -48,13 +58,15 @@ router.post("/submit", async (req, res) => {
         const output = filtered_testcase.output[index];
         const filePath = await generateFile(lang, code);
         const inputPath = await generateInputFile(input);
-        const { outPath, jobId } = await generateOutputFile(filePath);
-        const outputResult = await submitCpp(
-          filePath,
-          inputPath,
-          outPath,
-          jobId
-        );
+
+        let outputResult;
+        if(lang === "cpp"){
+           const { outPath, jobId } = await generateOutputFile(filePath);
+           outputResult = await submitCpp(filePath, inputPath, outPath, jobId);
+           deleteFile(outPath);
+        }else if(lang === "python") {
+          outputResult = await executePython(filePath, inputPath);
+        }
 
         if (outputResult.trim() !== output.trim()) {
           if (outputResult.trim() !== output.trim()) {
