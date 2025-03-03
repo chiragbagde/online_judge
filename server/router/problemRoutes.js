@@ -40,6 +40,61 @@ router.post("/create", verifyToken, async (req, res) => {
   });
 });
 
+router.post("/create/many", verifyToken, async (req, res) => {
+  try {
+    const problems = req.body;
+
+    if (!Array.isArray(problems) || problems.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Invalid input: Expecting an array of problems." });
+    }
+
+    let createdProblems = [];
+
+    for (const _problem of problems) {
+      const {
+        statement,
+        difficulty,
+        topic,
+        solution,
+        input,
+        examples,
+        constraints,
+        competition_problem,
+        description,
+      } = _problem;
+
+      if (statement && difficulty && topic) {
+        const newProb = await problem.create({
+          statement,
+          difficulty,
+          topic,
+          solution,
+          input,
+          examples,
+          constraints,
+          description,
+          competition_problem,
+        });
+
+        createdProblems.push(newProb._id);
+      }
+    }
+
+    res.status(201).json({
+      message: "Problems added successfully!",
+      createdProblems,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error adding problems",
+      error: error.message,
+    });
+  }
+});
+
+
 router.post("/update", verifyToken, async (req, res) => {
   const {
     statement,
@@ -105,6 +160,22 @@ router.get("/", verifyToken, async (req, res) => {
     problems,
   });
 });
+
+router.get("/topic-counts", verifyToken, async (req, res) => {
+  try {
+    const topicCounts = await problem.aggregate([
+      { $group: { _id: "$topic", count: { $sum: 1 } } },
+    ]);
+
+    res.status(200).json({
+      message: "Topic counts retrieved successfully!",
+      topicCounts,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error });
+  }
+});
+
 
 router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;

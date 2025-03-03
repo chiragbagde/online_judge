@@ -59,8 +59,8 @@ const problemSchema = mongoose.Schema({
     type: String,
     default: null,
   },
-  examples: [exampleSchema], // Array of example objects
-});
+  examples: [exampleSchema],
+}, {timestamps: true});
 
 const Problem = mongoose.model("problem", problemSchema);
 
