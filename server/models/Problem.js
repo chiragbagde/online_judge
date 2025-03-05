@@ -59,6 +59,10 @@ const problemSchema = mongoose.Schema({
     type: String,
     default: null,
   },
+  dailyDate: { 
+    type: Date, 
+    default: null 
+  },
   examples: [exampleSchema],
 }, {timestamps: true});
 

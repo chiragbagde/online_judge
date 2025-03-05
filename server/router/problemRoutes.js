@@ -212,6 +212,22 @@ router.delete("/:id", verifyToken, async (req, res) => {
   }
 });
 
+router.get("/search/:search", async (req, res) => {
+  const search = req.params.search;
+
+  try {
+    const problems = await problem.find({
+      statement: { $regex: search, $options: "i" },
+    }).limit(10);
+    res.status(200).json({
+      message: "Problems retrieved successfully!",
+      problems,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.get("/admin/:id", async (req, res) => {
   const id = req.params.id;
 
