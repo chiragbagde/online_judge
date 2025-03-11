@@ -26,13 +26,23 @@ const CompetitionSchema = mongoose.Schema({
       },
       timestamp: {
         type: Date,
-        default: Date.now,
       },
     },
   ],
 });
 
 CompetitionSchema.methods.registerUser = function (userId) {
+  this.users = this.users || [];
+  const existingUser = this.users.find((user) => user.userId.equals(userId));
+
+  if(existingUser){
+    existingUser.timestamp = new Date();
+  } else{
+    this.users.push({userId: userId, timestamp: new Date()});
+  }
+};
+
+CompetitionSchema.methods.addUser = function (userId) {
   const isUserRegistered = this.users?.some((user) =>
     user.userId.equals(userId)
   );
@@ -40,7 +50,7 @@ CompetitionSchema.methods.registerUser = function (userId) {
   if (!isUserRegistered) {
     this.users = this.users || [];
 
-    this.users.push({ userId: userId, timestamp: new Date() });
+    this.users.push({ userId: userId, timestamp: null  });
   }
 };
 

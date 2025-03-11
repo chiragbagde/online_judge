@@ -81,6 +81,31 @@ router.post("/registeruser", async (req, res) => {
       await competition_id.save();
     }
     res.status(200).json({
+      message: "User added to competition successfully",
+      competition_id,
+    });
+  } catch (error) {
+    console.error("Error registering User:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+router.post("/adduser", async (req, res) => {
+  const { user_id, id } = req.body;
+
+  if (!id) {
+    return res.status(400).send("Please enter an id to update");
+  }
+  let competition_id;
+  try {
+    if (user_id !== undefined) {
+      competition_id = await competition.findById(id);
+      competition_id.addUser(user_id);
+      await competition_id.save();
+    }
+    res.status(200).json({
       message: "User registered successfully",
       competition_id,
     });
@@ -207,6 +232,24 @@ router.post("/getallsubmisions", async (req, res) => {
     });
   }
 });
+
+router.post("/overview", verifyToken, async (req, res) => {
+  const { id } = req.body;
+
+  try {
+    const fetchedCompetition = await competition.findOne({ _id: id });
+      res.status(200).json({
+        message: "Competition fetched successfully",
+        fetchedCompetition,
+      });
+  } catch (error) {
+    console.error("Error getting competition:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
 
 router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;
