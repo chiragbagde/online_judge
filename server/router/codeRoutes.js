@@ -2,7 +2,7 @@
 const express = require("express");
 const { generateFile } = require("../generateFile");
 const { generateInputFile } = require("../generateInputFile");
-const { executeCpp, executePython } = require("../executeCodes");
+const { executeCpp, executePython, executeJavaScript } = require("../executeCodes");
 const { generateOutputFile } = require("../generateOutputFile");
 const { deleteFile } = require("../deleteFile");
 const testcase = require("../models/TestCase");
@@ -28,8 +28,12 @@ router.post("/run", async (req, res) => {
       deleteFile(outPath);
     }else if(lang === "python"){
       output = await executePython(filePath, inputPath);
-    }else {
-      return res.status(400).json({success: false, error: "Unsupported language!"})
+    }else if (lang === "javascript") {
+      output = await executeJavaScript(filePath, inputPath);
+    } else {
+      return res
+        .status(400)
+        .json({ success: false, error: "Unsupported language!" });
     }
 
     deleteFile(filePath);
@@ -66,6 +70,8 @@ router.post("/submit", async (req, res) => {
            deleteFile(outPath);
         }else if(lang === "python") {
           outputResult = await executePython(filePath, inputPath);
+        } else if(lang === "javascript"){
+          outputResult = await executeJavaScript(filePath, inputPath);
         }
 
         if (outputResult.trim() !== output.trim()) {
