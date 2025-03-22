@@ -54,12 +54,13 @@ router.post("/submit", async (req, res) => {
   }
 
   try {
-    let filtered_testcase = await testcase.findOne({ p_id });
+    let filtered_testcase = await testcase.find({ p_id });    
 
     const verifyTestCases = async () => {
       const failedTestCases = [];
-      const promises = filtered_testcase.input.map(async (input, index) => {
-        const output = filtered_testcase.output[index];
+      const promises = filtered_testcase.map(async (testcase, index) => {
+        const input = testcase["input"];
+        const output = testcase["output"];
         const filePath = await generateFile(lang, code);
         const inputPath = await generateInputFile(input);
 

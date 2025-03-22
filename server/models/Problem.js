@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const TestCase = require("./TestCase");
 
 const exampleSchema = mongoose.Schema({
   input: {
@@ -17,54 +18,58 @@ const exampleSchema = mongoose.Schema({
 
 const Example = mongoose.model("Example", exampleSchema);
 
-const problemSchema = mongoose.Schema({
-  statement: {
-    type: String,
-    default: null,
-  },
+const problemSchema = mongoose.Schema(
+  {
+    statement: {
+      type: String,
+      default: null,
+    },
 
-  description: [
-    {
+    description: [
+      {
+        type: String,
+        default: null,
+      },
+    ],
+    constraints: [
+      {
+        type: String,
+        default: null,
+      },
+    ],
+    difficulty: {
       type: String,
       default: null,
     },
-  ],
-  constraints: [
-    {
+    topic: {
       type: String,
       default: null,
     },
-  ],
-  difficulty: {
-    type: String,
-    default: null,
+    solution: {
+      type: String,
+      default: null,
+    },
+    image: {
+      type: Buffer,
+      contentType: String,
+    },
+    competition_problem: {
+      type: Boolean,
+      default: false,
+    },
+    input: {
+      type: String,
+      default: null,
+    },
+    dailyDate: {
+      type: Date,
+      default: null,
+    },
+    examples: [exampleSchema],
+    testCases: [{ type: mongoose.Schema.Types.ObjectId, ref: TestCase }],
   },
-  topic: {
-    type: String,
-    default: null,
-  },
-  solution: {
-    type: String,
-    default: null,
-  },
-  image: {
-    type: Buffer,
-    contentType: String,
-  },
-  competition_problem: {
-    type: Boolean,
-    default: false,
-  },
-  input: {
-    type: String,
-    default: null,
-  },
-  dailyDate: { 
-    type: Date, 
-    default: null 
-  },
-  examples: [exampleSchema],
-}, {timestamps: true});
+  { timestamps: true }
+);
 
 const Problem = mongoose.model("problem", problemSchema);
 

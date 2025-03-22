@@ -3,42 +3,42 @@ const express = require("express");
 const problem = require("./../models/Problem");
 const user = require("./../models/User");
 const verifyToken = require("../verifyToken");
+const TestCase = require("../models/TestCase");
 
 const router = express.Router();
 
 router.post("/create", verifyToken, async (req, res) => {
-  const {
-    statement,
-    difficulty,
-    topic,
-    solution,
-    input,
-    examples,
-    constraints,
-    competition_problem,
-    description,
-  } = req.body;
+  const { statement, difficulty, topic, description, examples, testCases } =
+    req.body;
 
   if (!(statement && difficulty && topic)) {
-    return res.status(400).send("Please enter all the information.");
+    return res.status(400).send("Missing required fields.");
   }
-  let newprob = await problem.create({
+
+  let createdTestCases = await TestCase.insertMany(testCases);
+
+  let testCaseIds = createdTestCases.map((tc) => tc._id);
+
+  let newProblem = await problem.create({
     statement,
     difficulty,
     topic,
-    solution,
-    input,
-    examples,
-    constraints,
     description,
-    competition_problem,
+    examples,
+    testCases: testCaseIds,
   });
 
-  res.status(200).json({
-    message: "You have added a new problem!",
-    newprob,
+  await TestCase.updateMany(
+    { _id: { $in: testCaseIds } },
+    { $set: { p_id: newProblem._id } }
+  );
+
+  res.status(201).json({
+    message: "Problem created successfully with test cases!",
+    newProblem,
   });
 });
+
 
 router.post("/create/many", verifyToken, async (req, res) => {
   try {
@@ -63,10 +63,14 @@ router.post("/create/many", verifyToken, async (req, res) => {
         constraints,
         competition_problem,
         description,
+        testCases,
       } = _problem;
 
       if (statement && difficulty && topic) {
-        const newProb = await problem.create({
+        let createdTestCases = await TestCase.insertMany(testCases);
+        let testCaseIds = createdTestCases.map((tc) => tc._id);
+
+        const newProblem = await problem.create({
           statement,
           difficulty,
           topic,
@@ -76,14 +80,19 @@ router.post("/create/many", verifyToken, async (req, res) => {
           constraints,
           description,
           competition_problem,
+          testCases: testCaseIds,
         });
 
-        createdProblems.push(newProb._id);
+        createdProblems.push(newProblem._id);
+        await TestCase.updateMany(
+          { _id: { $in: testCaseIds } },
+          { $set: { p_id: newProblem._id } }
+        );
       }
     }
 
     res.status(201).json({
-      message: "Problems added successfully!",
+      message: "Problems added successfully with test cases!",
       createdProblems,
     });
   } catch (error) {
@@ -93,7 +102,6 @@ router.post("/create/many", verifyToken, async (req, res) => {
     });
   }
 });
-
 
 router.post("/update", verifyToken, async (req, res) => {
   const {
@@ -181,7 +189,10 @@ router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   try {
-    let customprob = await problem.findOne({ _id: id });
+    let customprob = await problem.findOne({ _id: id }).populate(
+          "testCases"
+        );
+
 
     res.status(200).json({
       message: "Problem fetched successfully",

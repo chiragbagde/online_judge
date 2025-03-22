@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const DBConnection = async () => {
-  const MONGO_URL = process.env.DB_URL;
+  const MONGO_URL = "mongodb+srv://chiragsbagde:Test123@cluster0.y2bwvnd.mongodb.net/";
   console.log(MONGO_URL);
   try {
     await mongoose.connect(MONGO_URL, { useNewUrlParser: true });
