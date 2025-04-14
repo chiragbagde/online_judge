@@ -118,8 +118,15 @@ router.post("/adduser", async (req, res) => {
 });
 
 router.get("/", verifyToken, async (req, res) => {
+  const {id} = req.query;
   let competitions = await competition.find({});
-
+  competitions = competitions.map((comp) => {
+    const { users, ...rest } = comp._doc;
+    return {
+      ...rest,
+      user: comp.users.filter((user) => String(user.userId) === id)[0],
+    };
+  })
   res.status(200).json({
     message: "competitions retreived successfully!",
     competitions,
@@ -234,10 +241,17 @@ router.post("/getallsubmisions", async (req, res) => {
 });
 
 router.post("/overview", verifyToken, async (req, res) => {
-  const { id } = req.body;
+  const { id, userId } = req.body;
 
   try {
-    const fetchedCompetition = await competition.findOne({ _id: id });
+    let fetchedCompetition = await competition.findOne({ _id: id });
+    const {users, ...rest} = fetchedCompetition._doc;
+    fetchedCompetition = {
+      ...rest,
+      user: fetchedCompetition.users.filter(
+        (user) => String(user.userId) === userId
+      )[0],
+    };
       res.status(200).json({
         message: "Competition fetched successfully",
         fetchedCompetition,
