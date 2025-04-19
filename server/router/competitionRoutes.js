@@ -181,7 +181,6 @@ router.post("/getusersubmisions", verifyToken, async (req, res) => {
       verdict,
     });
 
-    console.log('Submissions with "passed" verdict:', submissions);
     res.status(200).json({
       submissions: submissions,
     });
@@ -228,7 +227,7 @@ router.post("/getallsubmisions", async (req, res) => {
     const submissions = await Submission.find({
       c_id,
     }).populate("u_id");
-
+    console.log("All submissions:", submissions);
     res.status(200).json({
       submissions: submissions,
     });

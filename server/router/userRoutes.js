@@ -3,12 +3,13 @@ const express = require("express");
 const User = require("./../models/User");
 const bcrypt = require("bcryptjs");
 const verifyToken = require("../verifyToken");
+const { sql } = require("../database/neon");
 
 const router = express.Router();
 
 router.get("/", verifyToken, async (req, res) => {
   try {
-    let users = await User.find();
+    const users = await sql`SELECT * FROM users`;
     res.json({ users: users });
   } catch {
     console.log("Internal server error.");
