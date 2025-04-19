@@ -21,7 +21,7 @@ const CompetitionSchema = mongoose.Schema({
   users: [
     {
       userId: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: User,
       },
       timestamp: {
@@ -33,7 +33,9 @@ const CompetitionSchema = mongoose.Schema({
 
 CompetitionSchema.methods.registerUser = function (userId) {
   this.users = this.users || [];
-  const existingUser = this.users.find((user) => user.userId.equals(userId));
+  console.log(this.users);
+  
+  const existingUser = this.users.find((user) => user.userId === userId);
 
   if(existingUser){
     existingUser.timestamp = new Date();
@@ -43,9 +45,7 @@ CompetitionSchema.methods.registerUser = function (userId) {
 };
 
 CompetitionSchema.methods.addUser = function (userId) {
-  const isUserRegistered = this.users?.some((user) =>
-    user.userId.equals(userId)
-  );
+  const isUserRegistered = this.users?.some((user) => user.userId === userId);
 
   if (!isUserRegistered) {
     this.users = this.users || [];
