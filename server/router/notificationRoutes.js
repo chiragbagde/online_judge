@@ -5,7 +5,7 @@ const router = express.Router();
 router.post("/create", async (req, res) => {
     const {message} = req.body;
 
-    try {
+    try {        
         const result = await sql`
              INSERT INTO notifications (message)
              VALUES (${message})
@@ -23,8 +23,28 @@ router.get("/", async (req, res) => {
     console.log(userId);
     
     try {
+        const missingNotifications = await sql`
+            SELECT n.id AS notification_id
+            FROM notifications n
+            LEFT JOIN user_notification un
+            ON n.id = un.notification_id AND un.user_id = ${userId}
+            WHERE un.notification_id IS NULL
+        `;
+
+        if(missingNotifications.length > 0) {
+            await Promise.all(
+                missingNotifications.map((notification) => (
+                    sql`
+                        INSERT INTO user_notification (user_id, notification_id, read)
+                        VALUES (${userId}, ${notification.notification_id}, false)
+
+                    `
+                ))
+            )
+        }
+
         const result = await sql`
-            SELECT n.id, n.message, n.created_at, un.read
+            SELECT n.id, n.title, n.body, n.created_at, un.read
             FROM user_notification un
             INNER JOIN notifications n ON n.id = un.notification_id
             WHERE un.user_id = ${userId}
