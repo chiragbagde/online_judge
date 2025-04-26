@@ -32,6 +32,6 @@ const socialSchema = mongoose.Schema({
   },
 });
 
-const social = mongoose.model("social", socialSchema);
+const social = mongoose.models.social || mongoose.model("social", socialSchema);
 
 module.exports = social;

@@ -1,7 +1,6 @@
 const express = require("express");
 const { DBConnection } = require("./database/db");
 const { testNeonConnection } = require("./database/neon");
-
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const mongoose = require("mongoose");
@@ -20,22 +19,35 @@ const PORT = process.env.PORT || 5000;
 let app;
 let server;
 let retryDelay = 5000;
+let retryCount = 0;
+const MAX_RETRIES = 5;
+
+// Helper function to clear model cache
+function clearRequireCacheForModels() {
+  const modelPaths = [
+    "./models/User",
+    "./models/Problem",
+    "./models/TestCase",
+    "./models/Competition",
+    "./models/Social",
+    "./models/Image",
+    "./models/Submission",
+  ];
+
+  modelPaths.forEach((path) => {
+    delete require.cache[require.resolve(path)];
+    require(path);
+  });
+}
 
 async function startServer() {
   try {
-    console.log("🛠️ Trying to start the server...");
+    console.log("🛠️ Trying to start the server... Attempt:", retryCount + 1);
 
     await DBConnection();
     await testNeonConnection();
 
-    // 💥 After DB is connected, reload models freshly
-    require("./models/User");
-    require("./models/Problem");
-    require("./models/TestCase");
-    require("./models/Competition");
-    require("./models/Social");
-    require("./models/Image");
-    require("./models/Submission");
+    clearRequireCacheForModels();
 
     app = express();
     app.use(cors());
@@ -59,29 +71,35 @@ async function startServer() {
     });
 
     retryDelay = 5000;
+    retryCount = 0; // Reset retry counter on success
   } catch (error) {
     console.error("❌ Error starting server:", error.message);
     console.error(error.stack);
 
+    retryCount++;
+    if (retryCount > MAX_RETRIES) {
+      console.error("💥 Max retries exceeded. Exiting...");
+      process.exit(1);
+    }
+
     console.log(`🔁 Retrying in ${retryDelay / 1000} seconds...`);
     setTimeout(() => {
-      retryDelay = Math.min(retryDelay * 2, 60000);
+      retryDelay = Math.min(retryDelay * 2, 60000); // Exponential backoff up to 60s
       startServer();
     }, retryDelay);
   }
 }
 
-
 async function resetMongoose() {
-  console.log('🔄 Resetting mongoose models and connections...');
-  
-  if (mongoose.models && typeof mongoose.models === 'object') {
+  console.log("🔄 Resetting mongoose models and connections...");
+
+  if (mongoose.models && typeof mongoose.models === "object") {
     for (const modelName of Object.keys(mongoose.models)) {
       delete mongoose.models[modelName];
     }
   }
 
-  if (mongoose.modelSchemas && typeof mongoose.modelSchemas === 'object') {
+  if (mongoose.modelSchemas && typeof mongoose.modelSchemas === "object") {
     for (const modelName of Object.keys(mongoose.modelSchemas)) {
       delete mongoose.modelSchemas[modelName];
     }
@@ -92,9 +110,8 @@ async function resetMongoose() {
   }
 }
 
-
 mongoose.connection.on("disconnected", async () => {
-  console.warn("⚠️  MongoDB disconnected! Restarting app...");
+  console.warn("⚠️ MongoDB disconnected! Restarting app...");
   try {
     if (server) {
       await new Promise((resolve, reject) => {
@@ -116,4 +133,5 @@ mongoose.connection.on("disconnected", async () => {
   }
 });
 
+// Start the first time
 startServer();

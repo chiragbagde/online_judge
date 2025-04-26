@@ -54,6 +54,6 @@ CompetitionSchema.methods.addUser = function (userId) {
   }
 };
 
-const Competition = mongoose.model("competition", CompetitionSchema);
+const Competition = mongoose.models.competition || mongoose.model("competition", CompetitionSchema);
 
 module.exports = Competition;

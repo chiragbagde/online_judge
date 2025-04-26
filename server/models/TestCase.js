@@ -16,6 +16,6 @@ const TestCaseSchema = mongoose.Schema({
   },
 });
 
-const TestCase = mongoose.model("testcase", TestCaseSchema);
+const TestCase = mongoose.models.testcase || mongoose.model("testcase", TestCaseSchema);
 
 module.exports = TestCase;
