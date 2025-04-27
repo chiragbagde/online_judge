@@ -12,7 +12,7 @@ router.post("/create", verifyToken, async (req, res) => {
   try {
     const { statement, difficulty, topic, description, examples, testCases } =
       req.body;
-
+      
     if (!(statement && difficulty && topic)) {
       return res.status(400).send("Missing required fields.");
     }
@@ -40,7 +40,7 @@ router.post("/create", verifyToken, async (req, res) => {
       newProblem,
     });
   } catch (e) {
-    console.error("Error creating problem:", error.message);
+    console.error("Error creating problem:", e.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -264,8 +264,9 @@ router.get("/admin/:id", async (req, res) => {
 
     const admin =
       await sql`SELECT id, role FROM users WHERE id = ${id} LIMIT 1`;
+      
     if (admin.length == 0 || admin[0].role !== "admin") {
-      res.status(400).json({
+      return res.status(400).json({
         message: "Couldn't fetch data",
       });
     }

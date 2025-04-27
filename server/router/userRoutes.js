@@ -126,7 +126,6 @@ router.post("/create", async (req, res) => {
 router.get("/admin/:id", async (req, res) => {
   try{
   const id = req.params.id;
-  console.log("user id ", id);
 
   const admin = await sql`SELECT id, role FROM users WHERE id = ${id} LIMIT 1`;  
     if (admin.length == 0 || admin[0].role !== "admin") {
