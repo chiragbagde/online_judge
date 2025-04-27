@@ -4,41 +4,48 @@ const problem = require("./../models/Problem");
 const user = require("./../models/User");
 const verifyToken = require("../verifyToken");
 const TestCase = require("../models/TestCase");
+const { sql } = require("../database/neon");
 
 const router = express.Router();
 
 router.post("/create", verifyToken, async (req, res) => {
-  const { statement, difficulty, topic, description, examples, testCases } =
-    req.body;
+  try {
+    const { statement, difficulty, topic, description, examples, testCases } =
+      req.body;
 
-  if (!(statement && difficulty && topic)) {
-    return res.status(400).send("Missing required fields.");
+    if (!(statement && difficulty && topic)) {
+      return res.status(400).send("Missing required fields.");
+    }
+
+    let createdTestCases = await TestCase.insertMany(testCases);
+
+    let testCaseIds = createdTestCases.map((tc) => tc._id);
+
+    let newProblem = await problem.create({
+      statement,
+      difficulty,
+      topic,
+      description,
+      examples,
+      testCases: testCaseIds,
+    });
+
+    await TestCase.updateMany(
+      { _id: { $in: testCaseIds } },
+      { $set: { p_id: newProblem._id } }
+    );
+
+    res.status(201).json({
+      message: "Problem created successfully with test cases!",
+      newProblem,
+    });
+  } catch (e) {
+    console.error("Error creating problem:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
   }
-
-  let createdTestCases = await TestCase.insertMany(testCases);
-
-  let testCaseIds = createdTestCases.map((tc) => tc._id);
-
-  let newProblem = await problem.create({
-    statement,
-    difficulty,
-    topic,
-    description,
-    examples,
-    testCases: testCaseIds,
-  });
-
-  await TestCase.updateMany(
-    { _id: { $in: testCaseIds } },
-    { $set: { p_id: newProblem._id } }
-  );
-
-  res.status(201).json({
-    message: "Problem created successfully with test cases!",
-    newProblem,
-  });
 });
-
 
 router.post("/create/many", verifyToken, async (req, res) => {
   try {
@@ -161,12 +168,19 @@ router.post("/update", verifyToken, async (req, res) => {
 });
 
 router.get("/", verifyToken, async (req, res) => {
-  let problems = await problem.find({ competition_problem: false });
+  try {
+    let problems = await problem.find({ competition_problem: false });
 
-  res.status(200).json({
-    message: "problems retreived successfully!",
-    problems,
-  });
+    res.status(200).json({
+      message: "problems retreived successfully!",
+      problems,
+    });
+  } catch (error) {
+    console.error("Error fetching problems:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
 });
 
 router.get("/topic-counts", verifyToken, async (req, res) => {
@@ -184,15 +198,11 @@ router.get("/topic-counts", verifyToken, async (req, res) => {
   }
 });
 
-
 router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;
 
   try {
-    let customprob = await problem.findOne({ _id: id }).populate(
-          "testCases"
-        );
-
+    let customprob = await problem.findOne({ _id: id }).populate("testCases");
 
     res.status(200).json({
       message: "Problem fetched successfully",
@@ -207,18 +217,25 @@ router.post("/id", verifyToken, async (req, res) => {
 });
 
 router.delete("/:id", verifyToken, async (req, res) => {
-  const id = req.params.id;
+  try {
+    const id = req.params.id;
 
-  const del = await problem.deleteOne({ _id: id });
+    const del = await problem.deleteOne({ _id: id });
 
-  if (del.deletedCount === 0) {
-    res.status(400).json({
-      message: "Invalid id",
-    });
-  } else {
-    res.status(200).json({
-      message: "problems deleted successfully",
-      del,
+    if (del.deletedCount === 0) {
+      res.status(400).json({
+        message: "Invalid id",
+      });
+    } else {
+      res.status(200).json({
+        message: "problems deleted successfully",
+        del,
+      });
+    }
+  } catch (error) {
+    console.error("Error deleting problem:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
     });
   }
 });
@@ -227,9 +244,11 @@ router.get("/search/:search", async (req, res) => {
   const search = req.params.search;
 
   try {
-    const problems = await problem.find({
-      statement: { $regex: search, $options: "i" },
-    }).limit(10);
+    const problems = await problem
+      .find({
+        statement: { $regex: search, $options: "i" },
+      })
+      .limit(10);
     res.status(200).json({
       message: "Problems retrieved successfully!",
       problems,
@@ -240,39 +259,55 @@ router.get("/search/:search", async (req, res) => {
 });
 
 router.get("/admin/:id", async (req, res) => {
-  const id = req.params.id;
+  try {
+    const id = req.params.id;
 
-  const admin = await user.findOne({ _id: id });
-  if (admin.role !== "admin") {
-    res.status(400).json({
-      message: "Couldn't fetch data",
+    const admin =
+      await sql`SELECT id, role FROM users WHERE id = ${id} LIMIT 1`;
+    if (admin.length == 0 || admin[0].role !== "admin") {
+      res.status(400).json({
+        message: "Couldn't fetch data",
+      });
+    }
+
+    let problems = await problem.find();
+
+    res.status(200).json({
+      message: "problems retreived successfully!",
+      problems,
+    });
+  } catch (error) {
+    console.error("Error fetching problems:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
     });
   }
-
-  let problems = await problem.find();
-
-  res.status(200).json({
-    message: "problems retreived successfully!",
-    problems,
-  });
 });
 
 router.get("/admin/ids/:id", async (req, res) => {
-  const id = req.params.id;
+  try {
+    const id = req.params.id;
 
-  const admin = await user.findOne({ _id: id });
-  if (admin.role !== "admin") {
-    res.status(400).json({
-      message: "Couldn't fetch data",
+    const admin =
+      await sql`SELECT id, role FROM users WHERE id = ${id} LIMIT 1`;
+    if (admin.role !== "admin") {
+      res.status(400).json({
+        message: "Couldn't fetch data",
+      });
+    }
+
+    let problems = await problem.find().select("statement topic");
+
+    res.status(200).json({
+      message: "problems retreived successfully!",
+      problems,
+    });
+  } catch (error) {
+    console.error("Error fetching problems:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
     });
   }
-
-  let problems = await problem.find().select(["statement", ["topic"]]);
-
-  res.status(200).json({
-    message: "problems retreived successfully!",
-    problems,
-  });
 });
 
 module.exports = router;

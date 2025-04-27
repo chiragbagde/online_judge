@@ -1,10 +1,9 @@
 const mongoose = require("mongoose");
-const User = require("../models/User");
 
 const socialSchema = mongoose.Schema({
   u_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: User,
+    ref: "user",
   },
   website: {
     type: String,

@@ -94,19 +94,28 @@ async function resetMongoose() {
   console.log("🔄 Resetting mongoose models and connections...");
 
   if (mongoose.models && typeof mongoose.models === "object") {
-    for (const modelName of Object.keys(mongoose.models)) {
+    Object.keys(mongoose.models).forEach((modelName) => {
       delete mongoose.models[modelName];
-    }
+    });
   }
 
   if (mongoose.modelSchemas && typeof mongoose.modelSchemas === "object") {
-    for (const modelName of Object.keys(mongoose.modelSchemas)) {
+    Object.keys(mongoose.modelSchemas).forEach((modelName) => {
       delete mongoose.modelSchemas[modelName];
-    }
+    });
+  }
+
+  if (mongoose.deleteModel) {
+    mongoose.deleteModel(/.*/);
   }
 
   if (mongoose.connection.readyState !== 0) {
-    await mongoose.disconnect();
+    try {
+      await mongoose.disconnect();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch (err) {
+      console.error("⚠️ Error while disconnecting mongoose:", err.message);
+    }
   }
 }
 
@@ -133,5 +142,4 @@ mongoose.connection.on("disconnected", async () => {
   }
 });
 
-// Start the first time
 startServer();

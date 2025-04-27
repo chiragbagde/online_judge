@@ -124,11 +124,11 @@ router.post("/create", async (req, res) => {
 });
 
 router.get("/admin/:id", async (req, res) => {
+  try{
   const id = req.params.id;
   console.log("user id ", id);
 
-  const admin = await User.findOne({ _id: id });
-  if (admin.role !== "admin") {
+  const admin = await sql`SELECT id, role FROM users WHERE id = ${id} LIMIT 1`;  if (admin.role !== "admin") {
     res.status(400).json({
       message: "Couldn't fetch data",
     });
@@ -140,6 +140,12 @@ router.get("/admin/:id", async (req, res) => {
     message: "problems retreived successfully!",
     users,
   });
+}catch (error) {
+    console.error("Error fetching problems:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
 });
 
 module.exports = router;

@@ -1,5 +1,4 @@
 var mongoose = require("mongoose");
-var User = require("./User");
 
 var imageSchema = new mongoose.Schema({
   name: String,
@@ -11,7 +10,7 @@ var imageSchema = new mongoose.Schema({
   imageUrl: String,
   u_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: User,
+    ref: "user",
   },
 });
 

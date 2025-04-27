@@ -1,6 +1,4 @@
 const mongoose = require("mongoose");
-const Problem = require("./Problem");
-const User = require("./User");
 
 const CompetitionSchema = mongoose.Schema({
   start_date: {
@@ -15,14 +13,14 @@ const CompetitionSchema = mongoose.Schema({
   problems: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: Problem,
+      ref: "problem",
     },
   ],
   users: [
     {
       userId: {
         type: String,
-        ref: User,
+        ref: "user",
       },
       timestamp: {
         type: Date,
