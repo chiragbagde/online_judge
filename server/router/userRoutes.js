@@ -128,13 +128,17 @@ router.get("/admin/:id", async (req, res) => {
   const id = req.params.id;
   console.log("user id ", id);
 
-  const admin = await sql`SELECT id, role FROM users WHERE id = ${id} LIMIT 1`;  if (admin.role !== "admin") {
-    res.status(400).json({
-      message: "Couldn't fetch data",
-    });
-  }
+  const admin = await sql`SELECT id, role FROM users WHERE id = ${id} LIMIT 1`;  
+    if (admin.length == 0 || admin[0].role !== "admin") {
+      res.status(400).json({
+        message: "Couldn't fetch data",
+      });
+      console.log(admin);
 
-  let users = await User.find().select(["firstname", "lastname"]);
+      return;
+    }
+
+  let users = await sql`SELECT * FROM users`;
 
   res.status(200).json({
     message: "problems retreived successfully!",
