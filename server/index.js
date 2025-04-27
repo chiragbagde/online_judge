@@ -113,7 +113,7 @@ async function resetMongoose() {
 mongoose.connection.on("disconnected", async () => {
   console.warn("⚠️ MongoDB disconnected! Restarting app...");
   try {
-    if (server) {
+    if (server && server.listening) {
       await new Promise((resolve, reject) => {
         server.close((err) => {
           if (err) return reject(err);
