@@ -4,6 +4,8 @@ const { testNeonConnection } = require("./database/neon");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const mongoose = require("mongoose");
+const cron = require("node-cron");
+const axios = require("axios");
 
 const authRoutes = require("./router/authRoutes");
 const codeRoutes = require("./router/codeRoutes");
@@ -139,6 +141,19 @@ mongoose.connection.on("disconnected", async () => {
     console.error("❌ Error while restarting server:", error.message);
     console.error(error.stack);
     process.exit(1);
+  }
+});
+
+cron.schedule("* * * * *", async () => {
+  try {
+    console.log("Cron job running: hitting GET /");
+
+    const response = await axios.get(
+      "http://localhost:3001/api"
+    );
+    console.log("Server response:", response.data);
+  } catch (error) {
+    console.error("Error calling GET /:", error.message);
   }
 });
 

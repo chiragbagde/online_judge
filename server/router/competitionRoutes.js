@@ -6,6 +6,7 @@ const user = require("./../models/User");
 const verifyToken = require("../verifyToken");
 const Submission = require("../models/Submission");
 const User = require("./../models/User");
+const { sql } = require("../database/neon");
 
 const router = express.Router();
 
@@ -159,7 +160,6 @@ router.post("/timestamp", verifyToken, async (req, res) => {
     const user = fetchedCompetition.users.filter(
       (user) => String(user.userId) === userId
     )[0];
-    console.log(fetchedCompetition, user);
     res.status(200).json({
       timestamp: user.timestamp,
     });
@@ -201,11 +201,12 @@ router.post("/getleaderboard", async (req, res) => {
       { $group: { _id: "$u_id", totalScore: { $sum: 1 } } },
       { $sort: { totalScore: -1 } },
     ]).exec();
-
+    
     const populatedLeaderboard = await Promise.all(
       leaderboard.map(async (entry) => {
-        const userData = await User.findById(entry._id);
-        return { user: userData, totalScore: entry.totalScore };
+        const userData =
+          await sql`SELECT * FROM users WHERE id = ${entry._id} LIMIT 1`;
+        return { user: userData[0], totalScore: entry.totalScore };
       })
     );
 
@@ -224,13 +225,28 @@ router.post("/getallsubmisions", async (req, res) => {
   const { c_id } = req.body;
 
   try {
-    const submissions = await Submission.find({
-      c_id,
-    }).populate("u_id");
-    console.log("All submissions:", submissions);
-    res.status(200).json({
-      submissions: submissions,
+    const submissions = await Submission.find({c_id});
+    const userIds = [...new Set(submissions.map((s) => s.u_id))];
+
+    const usersResult = await sql`
+      SELECT id, firstname, lastname, username, email
+      FROM users
+      WHERE id = ANY(${userIds})
+    `;    
+
+    const usersMap = {};
+    usersResult.forEach((user) => {
+      usersMap[user.id] = user;
     });
+
+    console.log(usersMap);
+    
+    const submissionsWithUser = submissions.map((sub) => ({
+      ...sub.toObject(),
+      user: usersMap[sub.u_id] || null,
+    }));
+
+    res.status(200).json({ submissions: submissionsWithUser });
   } catch (error) {
     console.error("Error retrieving submissions:", error);
     res.status(500).json({
@@ -296,8 +312,6 @@ router.post("/id", verifyToken, async (req, res) => {
 
 router.delete("/:id", verifyToken, async (req, res) => {
   const id = req.params.id;
-
-  console.log(id);
 
   const del = await competition.deleteOne({ _id: id });
 
