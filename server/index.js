@@ -16,6 +16,17 @@ const userRoutes = require("./router/userRoutes");
 const socialRoutes = require("./router/socialRoutes");
 const imageRoutes = require("./router/imageRoutes");
 const notificationsRoutes = require("./router/notificationRoutes");
+const rateLimiter = require("express-rate-limit");
+
+const limiter = rateLimiter({
+  windowMs: 1 * 60 * 1000,
+  max: 50,
+  handler: (req, res) => {
+    return res
+      .status(429)
+      .json({ success: false, error: "Too many requests, try again later." });
+  },
+});
 
 const PORT = process.env.PORT || 5000;
 let app;
@@ -56,6 +67,8 @@ async function startServer() {
     app.use(express.json());
     app.use(cookieParser());
     app.use(express.urlencoded({ extended: true }));
+    app.use(limiter);
+    app.set("trust proxy", 1);
 
     app.get("/", (req, res) => res.send("Running!"));
     app.use("/api/auth", authRoutes);

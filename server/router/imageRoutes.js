@@ -38,7 +38,6 @@ router.post("/update", verifyToken, upload.single("file"), async (req, res) => {
     if (!u_id) {
       return res.status(400).send("Please enter an id to update");
     }
-    console.log(req.file.filename);
 
     const filter = { u_id: u_id };
     const updatedDoc = {};
@@ -50,8 +49,6 @@ router.post("/update", verifyToken, upload.single("file"), async (req, res) => {
     if (req.file.filename !== undefined) {
       updatedDoc.imageUrl = req.file.filename;
     }
-
-    console.log(updatedDoc);
 
     let updateImage = await Image.updateOne(filter, updatedDoc);
 

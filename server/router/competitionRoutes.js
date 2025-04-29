@@ -238,8 +238,6 @@ router.post("/getallsubmisions", async (req, res) => {
     usersResult.forEach((user) => {
       usersMap[user.id] = user;
     });
-
-    console.log(usersMap);
     
     const submissionsWithUser = submissions.map((sub) => ({
       ...sub.toObject(),

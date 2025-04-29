@@ -31,7 +31,6 @@ const CompetitionSchema = mongoose.Schema({
 
 CompetitionSchema.methods.registerUser = function (userId) {
   this.users = this.users || [];
-  console.log(this.users);
   
   const existingUser = this.users.find((user) => user.userId === userId);
 

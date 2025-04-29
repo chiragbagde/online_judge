@@ -35,7 +35,6 @@ router.post("/update", verifyToken, async (req, res) => {
     const { id, user } = req.body;
 
     const filter = { _id: id };
-    console.log(user);
 
     let updateUser = await User.updateOne(filter, user);
 
@@ -71,7 +70,6 @@ router.delete("/:id", verifyToken, async (req, res) => {
 router.post("/update-role", verifyToken, async (req, res) => {
   try {
     const { id, role } = req.body;
-    console.log(role);
 
     const filter = { _id: id };
 
@@ -132,7 +130,6 @@ router.get("/admin/:id", async (req, res) => {
       res.status(400).json({
         message: "Couldn't fetch data",
       });
-      console.log(admin);
 
       return;
     }
