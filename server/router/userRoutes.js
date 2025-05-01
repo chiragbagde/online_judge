@@ -87,7 +87,7 @@ router.post("/update-role", verifyToken, async (req, res) => {
   }
 });
 
-router.post("/create", async (req, res) => {
+router.post("/create",verifyToken, async (req, res) => {
   const { firstname, lastname, email, role, mobile, username, password } =
     req.body;
   if (!(firstname && lastname && email && role)) {
@@ -121,7 +121,7 @@ router.post("/create", async (req, res) => {
   });
 });
 
-router.get("/admin/:id", async (req, res) => {
+router.get("/admin/:id",verifyToken, async (req, res) => {
   try{
   const id = req.params.id;
 

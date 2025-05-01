@@ -10,7 +10,7 @@ const { sql } = require("../database/neon");
 
 const router = express.Router();
 
-router.post("/create", async (req, res) => {
+router.post("/create",verifyToken, async (req, res) => {
   const { start_date, end_date, problems, title } = req.body;
 
   if (!(start_date && end_date && problems)) {
@@ -31,7 +31,7 @@ router.post("/create", async (req, res) => {
   });
 });
 
-router.post("/update", async (req, res) => {
+router.post("/update",verifyToken, async (req, res) => {
   const { start_date, end_date, problems, id } = req.body;
 
   if (!id) {
@@ -68,7 +68,7 @@ router.post("/update", async (req, res) => {
   }
 });
 
-router.post("/registeruser", async (req, res) => {
+router.post("/registeruser",verifyToken, async (req, res) => {
   const { user_id, id } = req.body;
 
   if (!id) {
@@ -93,7 +93,7 @@ router.post("/registeruser", async (req, res) => {
   }
 });
 
-router.post("/adduser", async (req, res) => {
+router.post("/adduser",verifyToken, async (req, res) => {
   const { user_id, id } = req.body;
 
   if (!id) {
@@ -118,7 +118,7 @@ router.post("/adduser", async (req, res) => {
   }
 });
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/",verifyToken, verifyToken, async (req, res) => {
   const {id} = req.query;
   let competitions = await competition.find({});
   competitions = competitions.map((comp) => {
@@ -192,14 +192,26 @@ router.post("/getusersubmisions", verifyToken, async (req, res) => {
   }
 });
 
-router.post("/getleaderboard", async (req, res) => {
+router.post("/getleaderboard", verifyToken, async (req, res) => {
   const { c_id } = req.body;
 
   try {
     const leaderboard = await Submission.aggregate([
       { $match: { c_id: c_id, verdict: "passed" } },
-      { $group: { _id: "$u_id", totalScore: { $sum: 1 } } },
-      { $sort: { totalScore: -1 } },
+      {
+        $group: {
+          _id: "$u_id",
+          uniquePassedQuestions: { $addToSet: "p_id" },
+        },
+      },
+      {
+        $project: {
+          totalScore: {
+            $size: "$uniquePassedQuestions",
+          },
+        },
+      },
+      { $sort: { totalScore: -1 } }
     ]).exec();
     
     const populatedLeaderboard = await Promise.all(
@@ -221,7 +233,7 @@ router.post("/getleaderboard", async (req, res) => {
   }
 });
 
-router.post("/getallsubmisions", async (req, res) => {
+router.post("/getallsubmisions",verifyToken, async (req, res) => {
   const { c_id } = req.body;
 
   try {

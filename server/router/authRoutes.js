@@ -27,7 +27,7 @@ router.post("/register", async (req, res) => {
   const user = newUser[0];
 
   const token = jwt.sign({ id: user.id, email }, process.env.SECRET_KEY, {
-    expiresIn: "3hrs",
+    expiresIn: "12hrs",
   });
   user.token = token;
   user.password = undefined;
@@ -60,7 +60,7 @@ router.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id, email }, process.env.SECRET_KEY, {
-      expiresIn: "3hrs",
+      expiresIn: "12hrs",
     });
     user.token = token;
     user.password = undefined;

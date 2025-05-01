@@ -157,17 +157,17 @@ mongoose.connection.on("disconnected", async () => {
   }
 });
 
-cron.schedule("* * * * *", async () => {
-  try {
-    console.log("Cron job running: hitting GET /");
+// cron.schedule("* * * * *", async () => {
+//   try {
+//     console.log("Cron job running: hitting GET /");
 
-    const response = await axios.get(
-      "http://localhost:3001/api"
-    );
-    console.log("Server response:", response.data);
-  } catch (error) {
-    console.error("Error calling GET /:", error.message);
-  }
-});
+//     const response = await axios.get(
+//       "http://localhost:3001/api"
+//     );
+//     console.log("Server response:", response.data);
+//   } catch (error) {
+//     console.error("Error calling GET /:", error.message);
+//   }
+// });
 
 startServer();

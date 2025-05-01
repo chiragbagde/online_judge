@@ -1,8 +1,9 @@
 const express = require("express");
 const { sql } = require("../database/neon");
 const router = express.Router();
+const verifyToken = require("../verifyToken");
 
-router.post("/create", async (req, res) => {
+router.post("/create",verifyToken, async (req, res) => {
     const {message} = req.body;
 
     try {        
@@ -18,7 +19,7 @@ router.post("/create", async (req, res) => {
     }
 });
 
-router.get("/", async (req, res) => {
+router.get("/",verifyToken, async (req, res) => {
     const { userId } = req.query;
     console.log(userId);
     
@@ -57,7 +58,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-router.post("/mark-as-read", async (req, res) => {
+router.post("/mark-as-read",verifyToken, async (req, res) => {
     const { userId, notificationId } = req.body;
 
     try {

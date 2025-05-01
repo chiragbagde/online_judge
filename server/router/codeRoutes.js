@@ -2,10 +2,11 @@ const express = require("express");
 const axios = require("axios");
 const testcase = require("../models/TestCase");
 const submission = require("../models/Submission");
+const verifyToken = require("../verifyToken");
 
 const router = express.Router();
 
-router.post("/run", async (req, res) => {
+router.post("/run", verifyToken, async (req, res) => {
   const { lang = "cpp", code, input } = req.body;
 
   if (code === undefined) {
@@ -14,11 +15,14 @@ router.post("/run", async (req, res) => {
 
   try {
     let output;
-      const { data } = await axios.post("http://localhost:3001/api/run", {
-        code,
-        input,
-        lang,
-      });
+      const { data } = await axios.post(
+        "https://code-execution-server-owik.onrender.com/api/run",
+        {
+          code,
+          input,
+          lang,
+        }
+      );
 
     output = data.output;
 
@@ -29,7 +33,7 @@ router.post("/run", async (req, res) => {
   }
 });
 
-router.post("/submit", async (req, res) => {
+router.post("/submit",verifyToken, async (req, res) => {
   const { lang = "cpp", code, p_id, u_id, c_id } = req.body;
 
   if (code === undefined) {

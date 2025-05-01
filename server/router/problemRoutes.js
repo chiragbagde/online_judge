@@ -240,7 +240,7 @@ router.delete("/:id", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/search/:search", async (req, res) => {
+router.get("/search/:search",verifyToken, async (req, res) => {
   const search = req.params.search;
 
   try {
@@ -258,7 +258,7 @@ router.get("/search/:search", async (req, res) => {
   }
 });
 
-router.get("/admin/:id", async (req, res) => {
+router.get("/admin/:id",verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
 
@@ -285,7 +285,7 @@ router.get("/admin/:id", async (req, res) => {
   }
 });
 
-router.get("/admin/ids/:id", async (req, res) => {
+router.get("/admin/ids/:id",verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
 
