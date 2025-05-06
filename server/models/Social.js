@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const socialSchema = mongoose.Schema({
   u_id: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: "user",
   },
   website: {

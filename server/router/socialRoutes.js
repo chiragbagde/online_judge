@@ -5,6 +5,7 @@ const Image = require("./../models/Image");
 const verifyToken = require("../verifyToken");
 const path = require("path");
 const fs = require("fs");
+const { sql } = require("../database/neon");
 
 const router = express.Router();
 
@@ -107,24 +108,40 @@ router.post("/id", verifyToken, async (req, res) => {
   const { u_id } = req.body;
 
   try {
-    let socialProfile = await social.findOne({ u_id: u_id }).populate("u_id");
+    let socialProfile = await social.findOne({ u_id: u_id });
 
     if (!socialProfile) {
       socialProfile = await social.create({ u_id: u_id });
       await socialProfile.save();
-      socialProfile = socialProfile.populate("u_id");
     }
-    let image, imageBase64;
 
+    const user = await sql`
+      SELECT id, firstname, lastname, email
+      FROM users
+      WHERE id = ${u_id}
+    `;
+
+    if (user.length === 0) {
+      return res.status(404).json({ message: "User not found in PostgreSQL" });
+    }
+
+    socialProfile = socialProfile.toObject();
+    socialProfile.u_id = user[0];
+
+    let image, imageBase64;
     try {
       image = await Image.findOne({ u_id: u_id });
 
-      const imagePath = path.join(__dirname, "../images/", image.imageUrl);
-      const imageBuffer = fs.readFileSync(imagePath);
-
-      imageBase64 = "data:image/jpeg;base64," + imageBuffer.toString("base64");
+      if (image) {
+        const imagePath = path.join(__dirname, "../images/", image.imageUrl);
+        const imageBuffer = fs.readFileSync(imagePath);
+        imageBase64 =
+          "data:image/jpeg;base64," + imageBuffer.toString("base64");
+      } else {
+        imageBase64 = undefined;
+      }
     } catch (e) {
-      console.log("file does not exists");
+      console.log("File does not exist");
       imageBase64 = undefined;
     }
 

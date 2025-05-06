@@ -9,7 +9,7 @@ var imageSchema = new mongoose.Schema({
   },
   imageUrl: String,
   u_id: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: "user",
   },
 });

@@ -118,7 +118,7 @@ router.post("/adduser",verifyToken, async (req, res) => {
   }
 });
 
-router.get("/",verifyToken, verifyToken, async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   const {id} = req.query;
   let competitions = await competition.find({});
   competitions = competitions.map((comp) => {

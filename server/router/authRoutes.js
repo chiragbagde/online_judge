@@ -3,43 +3,83 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sql } = require("../database/neon");
+const { sendOTP, verifyOtp } = require("../utils/otpService");
 
 const router = express.Router();
 
 router.post("/register", async (req, res) => {
   let { firstname, lastname, email, password, username } = req.body;
+
   if (!(firstname && lastname && email && password)) {
     return res.status(400).send("Please enter all the information.");
   }
   if(!username) {
     username = email.split("@")[0];
   }
-  const existingUser = await sql`SELECT * FROM users WHERE email = ${email}`;
-  if (existingUser.length > 0) {
-    return res.status(400).send("User already exists!");
-  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const newUser = await sql`
-    INSERT INTO users (firstname, lastname, email, password, username)
-    VALUES (${firstname}, ${lastname}, ${email}, ${hashedPassword}, ${username})
-    RETURNING id, firstname, lastname, email, username, role
-  `;
+  const existingUser = await sql`SELECT * FROM users WHERE email = ${email}`;
 
-  const user = newUser[0];
-  const token = jwt.sign({ id: user.id, email }, process.env.SECRET_KEY, {
-    expiresIn: "7d",
-  });
-
-  user.token = token;
-  user.password = undefined;
+  if(existingUser.length > 0) {
+    if (existingUser.otp_verified) {
+      return res.status(400).send("User already exists!");
+    }else{
+      await sql`
+        UPDATE users
+        SET firstname = ${firstname}, lastname = ${lastname}, password = ${hashedPassword}, username = ${username}
+        WHERE email = ${email}
+        RETURNING id, firstname, lastname, email, username, role
+      `;
+    } }
+    else {
+      await sql`
+      INSERT INTO users (firstname, lastname, email, password, username)
+      VALUES (${firstname}, ${lastname}, ${email}, ${hashedPassword}, ${username})
+      RETURNING id, firstname, lastname, email, username, role
+    `;
+  }
+ 
+  await sendOTP(email);
 
   res.status(200).json({
-    message: "You have successfully registered!",
-    token,
-    user: { ...user, _id: user.id },
-  });
+    message: "OTP sent to your email!",
+    success: true,
+    email
+  })
 });
+
+router.post("/verify-otp", async (req, res) => {
+  const {email, otp} = req.body;
+  if (!email || !otp) {
+    return res.status(400).send("Please enter all the information.");
+  };
+
+  try {
+    const result = await verifyOtp(email, otp);
+    const filteredUser = await sql`SELECT * FROM users WHERE email = ${email}`;
+    const user = filteredUser[0];
+    if (!user) { 
+      return res.status(400).send("User not found.");
+     };
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.SECRET_KEY,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    return res.status(200).json({
+      message: "Logged in successfully!",
+      token,
+      user: { ...user, _id: user.id },
+    });
+  }catch (error) {
+    console.log(error.message);
+    return res.status(400).json({ error: error.message });
+  }
+})
 
 router.post("/login", async (req, res) => {
   try {
