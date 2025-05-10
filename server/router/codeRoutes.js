@@ -50,11 +50,14 @@ router.post("/submit",verifyToken, async (req, res) => {
         const output = testcase["output"];
 
         let outputResult;
-        const { data } = await axios.post("http://localhost:3001/api/run", {
-          code,
-          input,
-          lang,
-        })
+        const { data } = await axios.post(
+          "https://code-execution-server-owik.onrender.com/api/run",
+          {
+            code,
+            input,
+            lang,
+          }
+        );
 
         outputResult = data.output;
 

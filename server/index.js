@@ -29,7 +29,6 @@ const limiter = rateLimiter({
 });
 
 const PORT = process.env.PORT || 5000;
-let app;
 let server;
 let retryDelay = 5000;
 let retryCount = 0;
@@ -63,12 +62,8 @@ async function startServer() {
     clearRequireCacheForModels();
 
     app = express();
-    const corsOptions = {
-      origin: "http://localhost:3000",
-      credentials: true,
-    };
 
-    app.use(cors(corsOptions));
+    app.use(cors());
     app.use(express.json());
     app.use(cookieParser());
     app.use(express.urlencoded({ extended: true }));

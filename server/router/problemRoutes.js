@@ -198,6 +198,36 @@ router.get("/topic-counts", verifyToken, async (req, res) => {
   }
 });
 
+router.get("/daily-problem", verifyToken, async (req, res) => {
+  try {
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setUTCDate(startOfDay.getUTCDate() + 1);
+
+    const dailyProblem = await problem.findOne({
+      dailyDate: { $gte: startOfDay, $lt: endOfDay },
+    });
+
+    if (!dailyProblem) {
+      return res.status(404).json({
+        message: "No daily problem found for today.",
+      });
+    }
+
+    res.status(200).json({
+      message: "Daily problem retrieved successfully!",
+      dailyProblem,
+    });
+  } catch (error) {
+    console.error("Error fetching daily problem:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
 router.post("/id", verifyToken, async (req, res) => {
   const { id } = req.body;
 
