@@ -85,6 +85,28 @@ async function startServer() {
       console.log(`✅ Server running on port ${PORT}`);
     });
 
+    server.on("error", async (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(`❌ Port ${PORT} is already in use.`);
+        console.log("🔄 Attempting to reset the server...");
+
+        const killCommand = `npx kill-port ${PORT}`;
+        const { exec } = require("child_process");
+        exec(killCommand, (error, stdout, stderr) => {
+          if (error) {
+            console.error("❌ Failed to kill the process using the port:", error.message);
+            process.exit(1);
+          } else {
+            console.log(`✅ Port ${PORT} has been freed. Restarting the server...`);
+            setTimeout(startServer, 1000);
+          }
+        });
+      } else {
+        console.error("❌ Unexpected server error:", err.message);
+        process.exit(1);
+      }
+    });
+
     retryDelay = 5000;
     retryCount = 0; // Reset retry counter on success
   } catch (error) {
