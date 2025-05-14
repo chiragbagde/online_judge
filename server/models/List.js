@@ -1,30 +1,24 @@
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid");
 
-const problemSchema = mongoose.Schema(
+const listSchema = mongoose.Schema(
   {
-    statement: { type: String, default: null },
-    description: [{ type: String, default: null }],
-    constraints: [{ type: String, default: null }],
-    difficulty: { type: String, default: null },
-    topic: { type: String, default: null },
-    solution: { type: String, default: null },
-    image: { type: Buffer, contentType: String },
-    competition_problem: { type: Boolean, default: false },
-    input: { type: String, default: null },
-    dailyDate: { type: Date, default: null },
-    examples: [
+    description: { type: String, default: null },
+    name: { type: String, default: null },
+    user_id: { type: String, default: uuidv4 },
+    problems: [
       {
         input: { type: String, default: null },
         output: { type: String, default: null },
         explanation: { type: String, default: null },
       },
     ],
-    testCases: [{ type: mongoose.Schema.Types.ObjectId, ref: "testcase" }],
+    problems: [{ type: mongoose.Schema.Types.ObjectId, ref: "problem" }], // Corrected reference
   },
   { timestamps: true }
 );
 
-const Problem =
-  mongoose.models.problem || mongoose.model("problem", problemSchema);
+const List =
+  mongoose.models.list || mongoose.model("list", listSchema);
 
-module.exports = Problem;
+module.exports = List;

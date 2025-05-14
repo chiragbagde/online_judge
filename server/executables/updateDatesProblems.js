@@ -10,7 +10,7 @@ const { DBConnection } = require("../database/db");
 
     for (let i = 0; i < problems.length; i++) {
       const dailyDate = new Date(today);
-      dailyDate.setDate(today.getDate() - i);
+      dailyDate.setDate(today.getDate() + i);
       problems[i].dailyDate = dailyDate;
       await problems[i].save();
       console.log(

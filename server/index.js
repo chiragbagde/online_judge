@@ -16,6 +16,7 @@ const userRoutes = require("./router/userRoutes");
 const socialRoutes = require("./router/socialRoutes");
 const imageRoutes = require("./router/imageRoutes");
 const notificationsRoutes = require("./router/notificationRoutes");
+const listRoutes = require("./router/listRoutes");
 const rateLimiter = require("express-rate-limit");
 
 const limiter = rateLimiter({
@@ -80,6 +81,7 @@ async function startServer() {
     app.use("/api/images", imageRoutes);
     app.use("/api/users", userRoutes);
     app.use("/api/notifications", notificationsRoutes);
+    app.use("/api/lists", listRoutes);
 
     server = app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
