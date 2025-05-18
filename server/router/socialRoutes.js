@@ -12,7 +12,7 @@ const multer = require("multer");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "images/");
+    cb(null, "/tmp");
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage});
+const upload = multer({ storage: storage });
 
 const router = express.Router();
 
@@ -34,8 +34,7 @@ router.post("/upload-profile-image", verifyToken, upload.single("profileImage"),
 
       const ext = path.extname(req.file.originalname);
       const newFilename = `${u_id}${ext}`;
-      const newPath = path.join(req.file.destination, newFilename);
-
+      const newPath = path.join(path.dirname(req.file.path), newFilename);
       fs.renameSync(req.file.path, newPath);
 
       const b2Result = await uploadFileToB2(newPath);
@@ -63,12 +62,10 @@ router.get("/download-profile-image/:u_id", verifyToken, async (req, res) => {
   try {
     const image = await Image.findOne({ u_id: u_id });
     if (!image || !image.imageUrl) {
-      return res.status(404).json({ error: "Image not foundo" });
+      return res.status(404).json({ error: "Image not found" });
     }
 
-    console.log(image);
-
-    const tmpDir = path.join(__dirname, "../tmp/");
+    const tmpDir = "/tmp";
     if (!fs.existsSync(tmpDir)) {
       fs.mkdirSync(tmpDir, { recursive: true });
     }
@@ -76,7 +73,7 @@ router.get("/download-profile-image/:u_id", verifyToken, async (req, res) => {
     await downloadFileFromB2(image.imageUrl, tempFilePath);
 
     const imageBuffer = fs.readFileSync(tempFilePath);
-    // fs.unlinkSync(tempFilePath);
+    fs.unlinkSync(tempFilePath);
     const contentType = mime.lookup(tempFilePath) || "application/octet-stream";
     res.set("Content-Type", contentType);
     return res.send(imageBuffer);
