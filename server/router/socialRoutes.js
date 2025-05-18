@@ -6,8 +6,85 @@ const verifyToken = require("../verifyToken");
 const path = require("path");
 const fs = require("fs");
 const { sql } = require("../database/neon");
+const { uploadFileToB2, downloadFileFromB2 } = require("../utilities/b2.js");
+const mime = require("mime-types");
+const multer = require("multer");
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "images/");
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    cb(null, Date.now() + ext);
+  },
+});
+
+const upload = multer({ storage: storage});
 
 const router = express.Router();
+
+router.post("/upload-profile-image", verifyToken, upload.single("profileImage"),
+  async (req, res) => {
+    try {
+      const { u_id } = req.body;
+      if (!req.file) {
+        return res.status(400).send("Please upload a file");
+      }
+
+      const ext = path.extname(req.file.originalname);
+      const newFilename = `${u_id}${ext}`;
+      const newPath = path.join(req.file.destination, newFilename);
+
+      fs.renameSync(req.file.path, newPath);
+
+      const b2Result = await uploadFileToB2(newPath);
+
+      fs.unlinkSync(newPath);
+
+      const imageDoc = await Image.findOneAndUpdate(
+        { u_id: u_id },
+        { imageUrl: b2Result.fileName },
+        { new: true, upsert: true }
+      );
+
+      res
+        .status(200)
+        .json({ message: "Image uploaded to B2", image: imageDoc });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+);
+
+router.get("/download-profile-image/:u_id", verifyToken, async (req, res) => {
+  const { u_id } = req.params;
+
+  try {
+    const image = await Image.findOne({ u_id: u_id });
+    if (!image || !image.imageUrl) {
+      return res.status(404).json({ error: "Image not foundo" });
+    }
+
+    console.log(image);
+
+    const tmpDir = path.join(__dirname, "../tmp/");
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true });
+    }
+    const tempFilePath = path.join(tmpDir, image.imageUrl);
+    await downloadFileFromB2(image.imageUrl, tempFilePath);
+
+    const imageBuffer = fs.readFileSync(tempFilePath);
+    // fs.unlinkSync(tempFilePath);
+    const contentType = mime.lookup(tempFilePath) || "application/octet-stream";
+    res.set("Content-Type", contentType);
+    return res.send(imageBuffer);
+  } catch (error) {
+    console.error("Error downloading image:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 router.post("/create", verifyToken, async (req, res) => {
   const { website, github, twitter, instagram, facebook, linkedin, u_id } =
@@ -38,8 +115,6 @@ router.post("/create", verifyToken, async (req, res) => {
     });
   }
 });
-
-const updateSocial = () => {};
 
 router.post("/update", verifyToken, async (req, res) => {
   const { website, github, twitter, instagram, facebook, linkedin, u_id, id } =
