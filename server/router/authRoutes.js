@@ -49,6 +49,93 @@ router.post("/register", async (req, res) => {
   })
 });
 
+router.post("/resend-otp", async (req, res) => {
+  const {email} = req.body;
+
+  if(!email) {
+    return res.status(400).send("Please enter all the information.");
+  }
+
+  const existingUser = await sql`SELECT * FROM users WHERE email = ${email}`;
+  
+  if(existingUser.length === 0) {
+    return res.status(400).send("User not found.");
+  }
+  if (existingUser.otp_verified) {
+    return res.status(400).send("User already exists!");
+  }
+
+  await sendOTP(email);
+
+  return res.status(200).json({  
+    message: "OTP resent to your email!",
+    success: true,
+    email
+  })
+});
+
+router.post("/reset-password", async (req, res) => {
+  try{
+    const { email, password } = req.body;
+
+    if (!(email && password)) {
+      return res.status(400).send("Please enter all the information.");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const allUsers = await sql`SELECT * FROM users WHERE email = ${email}`;
+    const existingUser = allUsers[0];
+    console.log(existingUser);
+    
+    if(existingUser.password) {
+      const enteredPassword = await bcrypt.compare(
+        password,
+        existingUser.password
+      );
+
+      if (enteredPassword) {
+        return res.status(400).send("Password is already used.");
+      }
+    }
+    
+    if (existingUser.length === 0) {
+      return res.status(400).send("User not found.");
+    }
+
+    const all = await sql`
+      UPDATE users
+      SET password = ${hashedPassword}
+      WHERE email = ${email}
+      RETURNING id, firstname, lastname, email, username, role
+    `;
+    const user = all[0];
+
+    const token = jwt.sign({ id: user.id, email }, process.env.SECRET_KEY, {
+      expiresIn: "7d",
+    });
+
+    const options = {
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+    };
+
+    res
+      .status(200)
+      .cookie("token", token, options)
+      .json({
+        message: "You have successfully logged in!",
+        success: true,
+        token,
+        user: { ...user, _id: user.id },
+      });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Server error");
+  }
+ 
+});
+
 router.post("/verify-otp", async (req, res) => {
   const {email, otp} = req.body;
   if (!email || !otp) {
