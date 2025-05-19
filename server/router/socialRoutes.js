@@ -114,56 +114,26 @@ router.post("/create", verifyToken, async (req, res) => {
 });
 
 router.post("/update", verifyToken, async (req, res) => {
-  const { website, github, twitter, instagram, facebook, linkedin, u_id, id } =
-    req.body;
-
-  if (!id) {
-    return res.status(400).send("Please enter an id to update");
-  }
-
-  const filter = { _id: id };
-  const updatedDoc = {};
-
-  if (website !== undefined) {
-    updatedDoc.website = website;
-  }
-
-  if (u_id !== undefined) {
-    updatedDoc.u_id = u_id;
-  }
-
-  if (github !== undefined) {
-    updatedDoc.github = github;
-  }
-
-  if (twitter !== undefined) {
-    updatedDoc.twitter = twitter;
-  }
-
-  if (facebook !== undefined) {
-    updatedDoc.facebook = facebook;
-  }
-
-  if (instagram !== undefined) {
-    updatedDoc.instagram = instagram;
-  }
-
-  if (linkedin !== undefined) {
-    updatedDoc.linkedin = linkedin;
-  }
+  const { id, u_id, firstname, lastname, email, ...fields } = req.body;
+  if (!u_id) return res.status(400).send("Please enter an id to update");
 
   try {
-    let updateSocial = await social.updateOne(filter, updatedDoc);
+    if (firstname) await sql`UPDATE users SET firstname = ${firstname} WHERE id = ${u_id}`;
+    if (lastname) await sql`UPDATE users SET lastname = ${lastname} WHERE id = ${u_id}`;
+    if (email) await sql`UPDATE users SET email = ${email} WHERE id = ${u_id}`;
 
-    res.status(200).json({
-      message: "Social Profile updated successfully",
-      updateSocial,
-    });
+    const allowedFields = ["website", "github", "twitter", "instagram", "facebook", "linkedin", "u_id"];
+    const updatedDoc = {};
+    for (const key of allowedFields) {
+      if (fields[key] !== undefined) updatedDoc[key] = fields[key];
+    }
+
+    const filter = { u_id: u_id };
+    let updateSocial = await social.updateOne(filter, updatedDoc);
+    res.status(200).json({ message: "Social Profile updated successfully", updateSocial });
   } catch (error) {
     console.error("Error updating social profile:", error.message);
-    res.status(500).json({
-      error: "Internal Server Error",
-    });
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
@@ -188,7 +158,7 @@ router.post("/id", verifyToken, async (req, res) => {
     }
 
     const user = await sql`
-      SELECT id, firstname, lastname, email
+      SELECT id, firstname, lastname, email, username, mobile
       FROM users
       WHERE id = ${u_id}
     `;
@@ -198,32 +168,13 @@ router.post("/id", verifyToken, async (req, res) => {
     }
 
     socialProfile = socialProfile.toObject();
-    socialProfile.u_id = user[0];
-
-    let image, imageBase64;
-    try {
-      image = await Image.findOne({ u_id: u_id });
-
-      if (image) {
-        const imagePath = path.join(__dirname, "../images/", image.imageUrl);
-        const imageBuffer = fs.readFileSync(imagePath);
-        imageBase64 =
-          "data:image/jpeg;base64," + imageBuffer.toString("base64");
-      } else {
-        imageBase64 = undefined;
-      }
-    } catch (e) {
-      console.log("File does not exist");
-      imageBase64 = undefined;
-    }
+    socialProfile = {...socialProfile, ...user[0] };
+    delete socialProfile.id;
+    delete socialProfile._id;
 
     res.status(200).json({
       message: "Social Profile fetched successfully",
-      socialProfile,
-      profileImageBuffer: {
-        img: imageBase64,
-        imgId: image?._id,
-      },
+      socialProfile
     });
   } catch (error) {
     console.error("Error getting social profile:", error.message);
