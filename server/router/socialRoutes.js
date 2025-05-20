@@ -6,7 +6,7 @@ const verifyToken = require("../verifyToken");
 const path = require("path");
 const fs = require("fs");
 const { sql } = require("../database/neon");
-const { uploadFileToB2, downloadFileFromB2 } = require("../utilities/b2.js");
+const { uploadFileToB2, downloadFileFromB2, deleteFileFromB2 } = require("../utilities/b2.js");
 const mime = require("mime-types");
 const multer = require("multer");
 
@@ -36,6 +36,15 @@ router.post("/upload-profile-image", verifyToken, upload.single("profileImage"),
       const newFilename = `${u_id}${ext}`;
       const newPath = path.join(path.dirname(req.file.path), newFilename);
       fs.renameSync(req.file.path, newPath);
+
+      try{
+        await deleteFileFromB2(newFilename);
+        console.log("deleted other instance successfully!");
+        
+      }catch{
+        console.log("Did not find any instance");
+        
+      }
 
       const b2Result = await uploadFileToB2(newPath);
 
@@ -83,6 +92,26 @@ router.get("/download-profile-image/:u_id", verifyToken, async (req, res) => {
   }
 });
 
+router.delete("/delete-profile-image/:u_id", verifyToken, async (req, res) => {
+  const { u_id } = req.params;
+  
+  try {
+    const image = await Image.findOne({ u_id });
+    if (!image || !image.imageUrl) {
+      return res.status(404).json({ error: "Image not found" });
+    }
+
+    await deleteFileFromB2("5efb7746-aed0-4c75-b8c5-bfe97211501c.jpeg");
+
+    await Image.deleteOne({ u_id });
+
+    res.status(200).json({ message: "Profile image deleted from B2 and database" });
+  } catch (error) {
+    console.error("Error deleting profile image:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 router.post("/create", verifyToken, async (req, res) => {
   const { website, github, twitter, instagram, facebook, linkedin, u_id } =
     req.body;
@@ -114,13 +143,15 @@ router.post("/create", verifyToken, async (req, res) => {
 });
 
 router.post("/update", verifyToken, async (req, res) => {
-  const { id, u_id, firstname, lastname, email, ...fields } = req.body;
+  const { id, u_id, firstname, lastname, email, mobile, ...fields } = req.body;
   if (!u_id) return res.status(400).send("Please enter an id to update");
 
   try {
     if (firstname) await sql`UPDATE users SET firstname = ${firstname} WHERE id = ${u_id}`;
     if (lastname) await sql`UPDATE users SET lastname = ${lastname} WHERE id = ${u_id}`;
     if (email) await sql`UPDATE users SET email = ${email} WHERE id = ${u_id}`;
+    if(mobile) await sql`UPDATE users SET mobile = ${mobile} WHERE id = ${u_id}`
+    console.log(mobile, u_id);
 
     const allowedFields = ["website", "github", "twitter", "instagram", "facebook", "linkedin", "u_id"];
     const updatedDoc = {};

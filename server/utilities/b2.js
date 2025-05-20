@@ -77,4 +77,24 @@ const downloadFileFromB2 = async (fileName, savePath) => {
   });
 };
 
-module.exports = { uploadFileToB2, downloadFileFromB2 };
+const deleteFileFromB2 = async (fileName) => {
+  const authDetails = await getAuthToken();
+  const { apiUrl, authorizationToken } = authDetails;
+    
+  const fileListRes = await axios.post(
+    `${apiUrl}/b2api/v2/b2_list_file_names`,
+    { bucketId: B2_BUCKET_ID, startFileName: fileName, maxFileCount: 1 },
+    { headers: { Authorization: authorizationToken } }
+  );
+  const file = fileListRes.data.files.find(f => f.fileName === fileName);
+  if (!file) {
+    throw new Error("File not found in B2");
+  }
+  await axios.post(
+    `${apiUrl}/b2api/v2/b2_delete_file_version`,
+    { fileName: file.fileName, fileId: file.fileId },
+    { headers: { Authorization: authorizationToken } }
+  );
+};
+
+module.exports = { uploadFileToB2, downloadFileFromB2, deleteFileFromB2 };
