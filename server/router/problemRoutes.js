@@ -119,6 +119,8 @@ router.post("/update", verifyToken, async (req, res) => {
     competition_problem,
     input,
     id,
+    constraints,
+    examples
   } = req.body;
 
   if (!id) {
@@ -127,6 +129,14 @@ router.post("/update", verifyToken, async (req, res) => {
 
   const filter = { _id: id };
   const updatedDoc = {};
+
+  if(constraints !== undefined) {
+    updatedDoc.constraints = constraints;
+  }
+
+  if(examples !== undefined){
+    updatedDoc.examples = examples;
+  }
 
   if (statement !== undefined) {
     updatedDoc.statement = statement;
