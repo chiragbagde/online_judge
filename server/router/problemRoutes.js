@@ -5,6 +5,7 @@ const user = require("./../models/User");
 const verifyToken = require("../verifyToken");
 const TestCase = require("../models/TestCase");
 const { sql } = require("../database/neon");
+const cache = require("../middleware/cache");
 
 const router = express.Router();
 
@@ -177,23 +178,24 @@ router.post("/update", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", verifyToken, cache("all_problems"), async (req, res) => {
   try {
     let problems = await problem.find({ competition_problem: false });
 
     res.status(200).json({
-      message: "problems retreived successfully!",
+      message: "problems retrieved successfully!",
       problems,
     });
   } catch (error) {
-    console.error("Error fetching problems:", error.message);
+    console.error("Error fetching problems:", error);
     res.status(500).json({
       error: "Internal Server Error",
     });
   }
 });
 
-router.get("/topic-counts", verifyToken, async (req, res) => {
+
+router.get("/topic-counts", verifyToken, cache("topics"), async (req, res) => {
   try {
     const topicCounts = await problem.aggregate([
       { $group: { _id: "$topic", count: { $sum: 1 } } },
@@ -208,7 +210,7 @@ router.get("/topic-counts", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/daily-problem", verifyToken, async (req, res) => {
+router.get("/daily-problem", verifyToken, cache("daily_problem"), async (req, res) => {
   try {
     const startOfDay = new Date();
     startOfDay.setUTCHours(0, 0, 0, 0);
