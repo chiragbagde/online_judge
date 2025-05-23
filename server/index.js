@@ -19,6 +19,12 @@ const notificationsRoutes = require("./router/notificationRoutes");
 const listRoutes = require("./router/listRoutes");
 const rateLimiter = require("express-rate-limit");
 
+if (!global.fetch) {
+  global.fetch = (...args) =>
+    import("node-fetch").then(({ default: fetch }) => fetch(...args));
+}
+
+
 const limiter = rateLimiter({
   windowMs: 1 * 60 * 1000,
   max: 50,
@@ -29,7 +35,7 @@ const limiter = rateLimiter({
   },
 });
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 let server;
 let retryDelay = 5000;
 let retryCount = 0;
@@ -64,7 +70,27 @@ async function startServer() {
 
     app = express();
 
-    app.use(cors());
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "https://crazy-codequest.netlify.app",
+      "https://server-thrumming-waterfall-7530.fly.dev",
+    ];
+
+    const corsOptions = {
+      origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("CORS not allowed from this origin: " + origin));
+        }
+      },
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
+      credentials: true,
+    };
+
+    app.use(cors(corsOptions));
+    
     app.use(express.json());
     app.use(cookieParser());
     app.use(express.urlencoded({ extended: true }));
@@ -83,9 +109,9 @@ async function startServer() {
     app.use("/api/notifications", notificationsRoutes);
     app.use("/api/lists", listRoutes);
 
-    server = app.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-    });
+    server = app.listen(PORT, "0.0.0.0", () => {
+      console.log(`✅ Server running on 0.0.0.0:${PORT}`);
+    });    
 
     server.on("error", async (err) => {
       if (err.code === "EADDRINUSE") {
