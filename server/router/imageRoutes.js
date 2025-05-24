@@ -4,6 +4,33 @@ const multer = require("multer");
 const path = require("path");
 const Image = require("../models/Image");
 const verifyToken = require("../verifyToken");
+const { GetObjectCommand } = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { r2Client } = require("../database/cloudfare-s3");
+
+router.post("/signed-url", verifyToken, async (req, res) => {
+  try {
+    const { keys } = req.body;
+    if(!Array.isArray(keys)) return res.status(400).json({ error: "Invalid keys format" });
+    
+    const signedUrls = await Promise.all(
+      keys.map( async (key) => {
+        const command = new GetObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: key
+        });
+
+        const signedUrl = await getSignedUrl(r2Client, command  , { expiresIn: 3000 });
+        return { key, url: signedUrl };
+      })
+    );
+    res.json(signedUrls);
+  } catch (error) {
+    console.error("Error generating signed URL:", error);
+    res.status(500).json({ error: "Failed to generate signed URL" });
+  }
+});
+
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
