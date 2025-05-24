@@ -171,7 +171,7 @@ router.post("/timestamp", verifyToken, async (req, res) => {
       timestamp: user.timestamp,
     });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).json({
       error: "Internal Server Error",
     });

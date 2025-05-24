@@ -28,7 +28,7 @@ router.post("/run", verifyToken, async (req, res) => {
 
     res.status(200).json({ output });
   } catch (e) {
-    console.log(e);
+    console.error(e);
     res.status(500).json({ success: false, error: e.message });
   }
 });
