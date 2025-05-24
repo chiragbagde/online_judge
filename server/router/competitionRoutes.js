@@ -7,6 +7,8 @@ const verifyToken = require("../verifyToken");
 const Submission = require("../models/Submission");
 const User = require("./../models/User");
 const { sql } = require("../database/neon");
+const cache = require("../middleware/cache");
+const { redis } = require("../database/redis-store");
 
 const router = express.Router();
 
@@ -18,6 +20,9 @@ router.post("/create",verifyToken, async (req, res) => {
   }
   let s_date = new Date(start_date);
   let l_date = new Date(end_date);
+  
+  await redis.del(`competitions`);
+
   let newcompetiton = await competition.create({
     problems,
     title,
@@ -37,6 +42,8 @@ router.post("/update",verifyToken, async (req, res) => {
   if (!id) {
     return res.status(400).send("Please enter an id to update");
   }
+
+  await redis.del(`competitions`);
 
   const filter = { _id: id };
   const updatedDoc = {};
@@ -118,7 +125,7 @@ router.post("/adduser",verifyToken, async (req, res) => {
   }
 });
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", verifyToken, cache(() => "competitions"), async (req, res) => {
   const {id} = req.query;
   let competitions = await competition.find({});
   competitions = competitions.map((comp) => {

@@ -4,10 +4,12 @@ const User = require("./../models/User");
 const bcrypt = require("bcryptjs");
 const verifyToken = require("../verifyToken");
 const { sql } = require("../database/neon");
+const cache = require("../middleware/cache");
+const { redis } = require("../database/redis-store");
 
 const router = express.Router();
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", verifyToken, cache(() => "users"), async (req, res) => {
   try {
     const users = await sql`SELECT * FROM users`;
     res.json({ users: users });
@@ -35,6 +37,9 @@ router.post("/update", verifyToken, async (req, res) => {
     const { id, user } = req.body;
 
     const filter = { _id: id };
+
+    await redis.del(`users`);
+    await redis.del(`user:${id}`);
 
     let updateUser = await User.updateOne(filter, user);
 
@@ -93,6 +98,10 @@ router.post("/create",verifyToken, async (req, res) => {
   if (!(firstname && lastname && email && role)) {
     return res.status(400).send("Please enter all the information.");
   }
+  
+  await redis.del(`users`);
+  await redis.del(`user:${email}`);
+
   const defaultPassword = "Test@123";
   const existingUser = await User.findOne({ email });
   if (existingUser) {

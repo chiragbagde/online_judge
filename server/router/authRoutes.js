@@ -4,6 +4,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sql } = require("../database/neon");
 const { sendOTP, verifyOtp } = require("../utils/otpService");
+const cache = require("../middleware/cache");
+const { redis } = require("../database/redis-store");
 
 const router = express.Router();
 
@@ -176,40 +178,41 @@ router.post("/login", async (req, res) => {
       return res.status(400).send("Please enter all the information.");
     }
 
-    const result = await sql`SELECT * FROM users WHERE email = ${email}`;
-    const user = result[0];
+    await redis.del(`user:${email}`); // Invalidate cache for this user
 
-    if (!user) {
-      return res.status(400).send("User not found.");
+    const allUsers = await sql`SELECT * FROM users WHERE email = ${email}`;
+    const existingUser = allUsers[0];
+
+    if (!existingUser) {
+      return res.status(400).send("User not found!");
     }
 
-    const enteredPassword = await bcrypt.compare(password, user.password);
+    const enteredPassword = await bcrypt.compare(
+      password,
+      existingUser.password
+    );
 
     if (!enteredPassword) {
-      return res.status(400).send("Password is incorrect");
+      return res.status(400).send("Invalid password!");
     }
 
-    const token = jwt.sign({ id: user.id, email }, process.env.SECRET_KEY, {
-      expiresIn: "12hrs",
+    const token = jwt.sign(
+      { id: existingUser.id },
+      process.env.SECRET_KEY,
+      { expiresIn: "1d" }
+    );
+
+    res.status(200).json({
+      token,
+      user: {
+        id: existingUser.id,
+        email: existingUser.email,
+        role: existingUser.role,
+      },
     });
-    user.token = token;
-    user.password = undefined;
-
-    const options = {
-      expires: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-      httpOnly: true,
-    };
-
-    res
-      .status(200)
-      .cookie("token", token, options)
-      .json({
-        message: "You have successfully logged in!",
-        success: true,
-        token,
-        user: { ...user, _id: user.id },
-      });
-  } catch (error) {
+  } catch (e) {
+    console.error("Login error:", e);
+    res.status(500).json({ error: "Internal Server Error" });
     console.log(error.message);
     res.status(500).send("Server error");
   }

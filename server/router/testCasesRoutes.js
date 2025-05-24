@@ -2,6 +2,8 @@
 const express = require("express");
 const testcase = require("../models/TestCase");
 const verifyToken = require("../verifyToken");
+const cache = require("../middleware/cache");
+const { redis } = require("../database/redis-store");
 
 const router = express.Router();
 
@@ -11,6 +13,10 @@ router.post("/create", verifyToken, async (req, res) => {
   if (!(p_id && input && output)) {
     return res.status(400).send("Please enter all the information.");
   }
+
+  await redis.del(`testcases`);
+  await redis.del(`testcase:${p_id}`);
+
   let newtestcase = await testcase.create({
     p_id,
     input,
@@ -29,6 +35,9 @@ router.post("/update", verifyToken, async (req, res) => {
   if (!id) {
     return res.status(400).send("Please enter an id to update");
   }
+
+  await redis.del(`testcases`);
+  await redis.del(`testcase:${p_id}`);
 
   const filter = { _id: id };
   const updatedDoc = {};
@@ -60,7 +69,7 @@ router.post("/update", verifyToken, async (req, res) => {
   }
 });
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", verifyToken, cache(() => "testcases"), async (req, res) => {
   let problems = await testcase.find({});
 
   res.status(200).json({
@@ -69,7 +78,7 @@ router.get("/", verifyToken, async (req, res) => {
   });
 });
 
-router.post("/id", verifyToken, async (req, res) => {
+router.post("/id", verifyToken, cache((req) => `testcase:${req.body.id}`), async (req, res) => {
   const { id } = req.body;
 
   try {
@@ -89,6 +98,9 @@ router.post("/id", verifyToken, async (req, res) => {
 
 router.delete("/", verifyToken, async (req, res) => {
   const { id } = req.body;
+
+  await redis.del(`testcases`);
+  await redis.del(`testcase:${id}`);
 
   const del = await testcase.deleteOne({ _id: id });
 

@@ -9,6 +9,8 @@ const { sql } = require("../database/neon");
 const { uploadFileToB2, downloadFileFromB2, deleteFileFromB2 } = require("../utilities/b2.js");
 const mime = require("mime-types");
 const multer = require("multer");
+const cache = require("../middleware/cache");
+const { redis } = require("../database/redis-store");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -31,6 +33,7 @@ router.post("/upload-profile-image", verifyToken, upload.single("profileImage"),
       if (!req.file) {
         return res.status(400).send("Please upload a file");
       }
+      await redis.del(`user-image:${u_id}`);
 
       const ext = path.extname(req.file.originalname);
       const newFilename = `${u_id}${ext}`;
@@ -65,7 +68,7 @@ router.post("/upload-profile-image", verifyToken, upload.single("profileImage"),
   }
 );
 
-router.get("/download-profile-image/:u_id", verifyToken, async (req, res) => {
+router.get("/download-profile-image/:u_id", verifyToken, cache((req) => "user-image:" + req.params.u_id), async (req, res) => {
   const { u_id } = req.params;
 
   try {
@@ -96,6 +99,8 @@ router.delete("/delete-profile-image/:u_id", verifyToken, async (req, res) => {
   const { u_id } = req.params;
   
   try {
+    await redis.del(`user-image:${u_id}`);
+
     const image = await Image.findOne({ u_id });
     if (!image || !image.imageUrl) {
       return res.status(404).json({ error: "Image not found" });

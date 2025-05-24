@@ -19,7 +19,7 @@ const verifyToken = (req, res, next) => {
         .json({ success: false, message: "Unauthorized: Invalid token" });
     }
 
-    req.user = decoded; // Attach the decoded user to the request object
+    req.user = decoded;
     next();
   });
 };
