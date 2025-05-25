@@ -4,26 +4,20 @@ const multer = require("multer");
 const path = require("path");
 const Image = require("../models/Image");
 const verifyToken = require("../verifyToken");
-const { GetObjectCommand } = require("@aws-sdk/client-s3");
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { r2Client } = require("../database/cloudfare-s3");
+const dotenv = require("dotenv");
+dotenv.config();
 
 router.post("/signed-url", verifyToken, async (req, res) => {
   try {
     const { keys } = req.body;
     if(!Array.isArray(keys)) return res.status(400).json({ error: "Invalid keys format" });
     
-    const signedUrls = await Promise.all(
-      keys.map( async (key) => {
-        const command = new GetObjectCommand({
-          Bucket: process.env.R2_BUCKET_NAME,
-          Key: key
-        });
-
-        const signedUrl = await getSignedUrl(r2Client, command  , { expiresIn: 3000 });
-        return { key, url: signedUrl };
-      })
-    );
+    const signedUrls = keys.map((key) => {
+        const token = process.env.IMAGE_WORKER_TOKEN;
+        const workerBase = process.env.IMAGE_WORKER_BASE;
+        const url = `${workerBase}/${encodeURIComponent(key)}?token=${token}`;
+        return { key, url };
+      });
     res.json(signedUrls);
   } catch (error) {
     console.error("Error generating signed URL:", error);
