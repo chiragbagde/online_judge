@@ -6,6 +6,7 @@ const { sql } = require("../database/neon");
 const { sendOTP, verifyOtp } = require("../utils/otpService");
 const cache = require("../middleware/cache");
 const { redis } = require("../database/redis-store");
+const logger = require("../services/logger");
 
 const router = express.Router();
 
@@ -88,7 +89,7 @@ router.post("/reset-password", async (req, res) => {
 
     const allUsers = await sql`SELECT * FROM users WHERE email = ${email}`;
     const existingUser = allUsers[0];
-    console.log(existingUser);
+    logger.info(existingUser);
     
     if(existingUser.password) {
       const enteredPassword = await bcrypt.compare(
@@ -132,7 +133,7 @@ router.post("/reset-password", async (req, res) => {
         user: { ...user, _id: user.id },
       });
   } catch (error) {
-    console.log(error.message);
+    logger.info(error.message);
     res.status(500).send("Server error");
   }
  
@@ -165,7 +166,7 @@ router.post("/verify-otp", async (req, res) => {
       user: { ...user, _id: user.id },
     });
   }catch (error) {
-    console.log(error.message);
+    logger.error(error.message);
     return res.status(400).json({ error: error.message });
   }
 })
@@ -211,9 +212,9 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (e) {
-    console.error("Login error:", e);
+    logger.error("Login error:", e);
     res.status(500).json({ error: "Internal Server Error" });
-    console.log(error.message);
+    logger.info(error.message);
     res.status(500).send("Server error");
   }
 });
@@ -256,7 +257,7 @@ router.post("/google-login", async (req, res) => {
       user: { ...user, _id: user.id },
     });
   } catch (error) {
-    console.error("Google login error:", error.message);
+    logger.error("Google login error:", error.message);
     res.status(500).json({ message: "Server error" });
   }
 });

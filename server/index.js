@@ -4,8 +4,7 @@ const { testNeonConnection } = require("./database/neon");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const mongoose = require("mongoose");
-const cron = require("node-cron");
-const axios = require("axios");
+const logger = require("./services/logger");
 
 const authRoutes = require("./router/authRoutes");
 const codeRoutes = require("./router/codeRoutes");
@@ -66,7 +65,6 @@ async function startServer() {
 
     await DBConnection();
     await testNeonConnection();
-
     clearRequireCacheForModels();
 
     app = express();
@@ -221,5 +219,7 @@ mongoose.connection.on("disconnected", async () => {
 //     console.error("Error calling GET /:", error.message);
 //   }
 // });
+
+
 
 startServer();

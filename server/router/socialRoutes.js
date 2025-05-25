@@ -11,6 +11,7 @@ const mime = require("mime-types");
 const multer = require("multer");
 const cache = require("../middleware/cache");
 const { redis } = require("../database/redis-store");
+const logger = require("../services/logger.js");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -42,10 +43,10 @@ router.post("/upload-profile-image", verifyToken, upload.single("profileImage"),
 
       try{
         await deleteFileFromB2(newFilename);
-        console.log("deleted other instance successfully!");
+        logger.info("deleted other instance successfully!");
         
       }catch{
-        console.log("Did not find any instance");
+        logger.info("Did not find any instance");
         
       }
 
@@ -90,7 +91,7 @@ router.get("/download-profile-image/:u_id", verifyToken, cache((req) => "user-im
     res.set("Content-Type", contentType);
     return res.send(imageBuffer);
   } catch (error) {
-    console.error("Error downloading image:", error.message);
+    logger.error("Error downloading image:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -112,7 +113,7 @@ router.delete("/delete-profile-image/:u_id", verifyToken, async (req, res) => {
 
     res.status(200).json({ message: "Profile image deleted from B2 and database" });
   } catch (error) {
-    console.error("Error deleting profile image:", error.message);
+    logger.error("Error deleting profile image:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -140,7 +141,7 @@ router.post("/create", verifyToken, async (req, res) => {
       newSocialRoutes,
     });
   } catch (e) {
-    console.log(e.message);
+    logger.error(e.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -156,7 +157,7 @@ router.post("/update", verifyToken, async (req, res) => {
     if (lastname) await sql`UPDATE users SET lastname = ${lastname} WHERE id = ${u_id}`;
     if (email) await sql`UPDATE users SET email = ${email} WHERE id = ${u_id}`;
     if(mobile) await sql`UPDATE users SET mobile = ${mobile} WHERE id = ${u_id}`
-    console.log(mobile, u_id);
+    logger.info(mobile, u_id);
 
     const allowedFields = ["website", "github", "twitter", "instagram", "facebook", "linkedin", "u_id"];
     const updatedDoc = {};
@@ -168,7 +169,7 @@ router.post("/update", verifyToken, async (req, res) => {
     let updateSocial = await social.updateOne(filter, updatedDoc);
     res.status(200).json({ message: "Social Profile updated successfully", updateSocial });
   } catch (error) {
-    console.error("Error updating social profile:", error.message);
+    logger.error("Error updating social profile:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -213,7 +214,7 @@ router.post("/id", verifyToken, async (req, res) => {
       socialProfile
     });
   } catch (error) {
-    console.error("Error getting social profile:", error.message);
+    logger.error("Error getting social profile:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });

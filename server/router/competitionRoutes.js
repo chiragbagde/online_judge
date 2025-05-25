@@ -9,6 +9,7 @@ const User = require("./../models/User");
 const { sql } = require("../database/neon");
 const cache = require("../middleware/cache");
 const { redis } = require("../database/redis-store");
+const logger = require("../services/logger");
 
 const router = express.Router();
 
@@ -320,7 +321,7 @@ router.post("/id", verifyToken, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error getting competition:", error.message);
+    logger.error("Error getting competition:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });

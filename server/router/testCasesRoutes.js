@@ -4,6 +4,7 @@ const testcase = require("../models/TestCase");
 const verifyToken = require("../verifyToken");
 const cache = require("../middleware/cache");
 const { redis } = require("../database/redis-store");
+const logger = require("../services/logger");
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.post("/update", verifyToken, async (req, res) => {
       updateprob,
     });
   } catch (error) {
-    console.error("Error updating testcase:", error.message);
+    logger.error("Error updating testcase:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -89,7 +90,7 @@ router.post("/id", verifyToken, cache((req) => `testcase:${req.body.id}`), async
       customtestcase,
     });
   } catch (error) {
-    console.error("Error getting testcase:", error.message);
+    logger.error("Error getting testcase:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });

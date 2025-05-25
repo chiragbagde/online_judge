@@ -1,12 +1,13 @@
 const express = require("express");
 const List = require("../models/List");
 const verifyToken = require("../verifyToken");
+const logger = require("../services/logger");
 
 const router = express.Router();
 
 router.get("/", verifyToken, async (req, res) => {
   const { user_id } = req.query;
-  console.log(user_id);
+  logger.info(user_id);
   
 
   try {
@@ -16,7 +17,7 @@ router.get("/", verifyToken, async (req, res) => {
       lists,
     });
   } catch (error) {
-    console.error("Error retrieving lists:", error.message);
+    logger.error("Error retrieving lists:", error.message);
     res.status(500).json({
       error: "Internal server error",
     });
@@ -39,7 +40,7 @@ router.post("/create", verifyToken, async (req, res) => {
       list: newList,
     });
   } catch (error) {
-    console.error("Error creating list:", error.message);
+    logger.error("Error creating list:", error.message);
     res.status(500).json({
       error: "Internal server error",
     });
@@ -71,7 +72,7 @@ router.post("/update", verifyToken, async (req, res) => {
       list: updatedList,
     });
   } catch (error) {
-    console.error("Error updating list:", error.message);
+    logger.error("Error updating list:", error.message);
     res.status(500).json({
       error: "Internal server error",
     });
@@ -99,7 +100,7 @@ router.post("/delete", verifyToken, async (req, res) => {
       list: deletedList,
     });
   } catch (error) {
-    console.error("Error deleting list:", error.message);
+    logger.error("Error deleting list:", error.message);
     res.status(500).json({
       error: "Internal server error",
     });

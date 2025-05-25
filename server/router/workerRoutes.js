@@ -1,7 +1,7 @@
 const axios = require('axios');
 const express = require('express');
-const verifyToken = require("../verifyToken");
 const dotenv = require("dotenv");
+const logger = require('../services/logger');
 dotenv.config();
 
 
@@ -17,7 +17,7 @@ async function sendLogToWorker(logMessage) {
       }
     });
   } catch (error) {
-    console.error('Error sending log:', error.response?.status, error.message);
+    logger.error('Error sending log:', error.response?.status, error.message);
   }
 }
 
@@ -32,7 +32,7 @@ router.post('/send-log', async (req, res) => {
       await sendLogToWorker(logData);
       res.json({ success: true, message: 'Log sent to worker' });
     } catch (error) {
-      console.error('Failed to send log:', error);
+      logger.error('Failed to send log:', error);
       res.status(500).json({ error: 'Failed to send log' });
     }
   });

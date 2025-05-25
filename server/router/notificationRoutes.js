@@ -2,6 +2,7 @@ const express = require("express");
 const { sql } = require("../database/neon");
 const router = express.Router();
 const verifyToken = require("../verifyToken");
+const logger = require("../services/logger");
 
 router.post("/create",verifyToken, async (req, res) => {
     const {message} = req.body;
@@ -14,14 +15,14 @@ router.post("/create",verifyToken, async (req, res) => {
              `
         res.status(201).json({message: "Notification created successfully", id: result[0].id});
     } catch(error){
-        console.error("Error creating notification:", error.message);
+        logger.error("Error creating notification:", error.message);
         res.status(500).send("Internal server error.")
     }
 });
 
 router.get("/",verifyToken, async (req, res) => {
     const { userId } = req.query;
-    console.log(userId);
+    logger.info(userId);
     
     try {
         const missingNotifications = await sql`
@@ -53,7 +54,7 @@ router.get("/",verifyToken, async (req, res) => {
         `;
         res.status(200).json(result);
     } catch (error) {
-        console.error("Error fetching notifications:", error.message);
+        logger.error("Error fetching notifications:", error.message);
         res.status(500).send("Internal server error.");
     }
 });
@@ -69,7 +70,7 @@ router.post("/mark-as-read",verifyToken, async (req, res) => {
             `
         res.status(200).json({message: "Marked as read"});
         } catch(error) {
-            console.error("Error marking notification as read:", error.message);
+            logger.error("Error marking notification as read:", error.message);
             res.status(500).send("Internal server error.");
         }
         

@@ -5,7 +5,11 @@ const path = require("path");
 const Image = require("../models/Image");
 const verifyToken = require("../verifyToken");
 const dotenv = require("dotenv");
+const logger = require("../services/logger");
+
 dotenv.config();
+
+process.env.SERVICE_NAME = 'image-service';
 
 router.post("/signed-url", verifyToken, async (req, res) => {
   try {
@@ -18,13 +22,14 @@ router.post("/signed-url", verifyToken, async (req, res) => {
         const url = `${workerBase}/${encodeURIComponent(key)}?token=${token}`;
         return { key, url };
       });
+    logger.log('Generated signed URLs', 'info', { keys });
     res.json(signedUrls);
   } catch (error) {
-    console.error("Error generating signed URL:", error);
+    logger.log('Error generating signed URL', 'error', { error: error.message });
+    logger.error("Error generating signed URL:", error);
     res.status(500).json({ error: "Failed to generate signed URL" });
   }
 });
-
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -45,10 +50,12 @@ router.post("/upload", verifyToken, upload.single("file"), async (req, res) => {
 
     const newImage = new Image({ title, desc, imageUrl, u_id });
     const savedImage = await newImage.save();
+    logger.log('Image uploaded', 'info', { title, desc, u_id });
 
     res.json(savedImage);
   } catch (error) {
-    console.error("Error uploading image:", error.message);
+    logger.log('Error uploading image', 'error', { error: error.message });
+    logger.error("Error uploading image:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -72,13 +79,15 @@ router.post("/update", verifyToken, upload.single("file"), async (req, res) => {
     }
 
     let updateImage = await Image.updateOne(filter, updatedDoc);
+    logger.log('Image updated', 'info', { u_id });
 
     res.status(200).json({
       message: "Image updated successfully",
       updateImage,
     });
   } catch (error) {
-    console.error("Error uploading image:", error.message);
+    logger.log('Error updating image', 'error', { error: error.message });
+    logger.error("Error uploading image:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -86,9 +95,10 @@ router.post("/update", verifyToken, upload.single("file"), async (req, res) => {
 router.get("/all", verifyToken, async (req, res) => {
   try {
     const images = await Image.find();
+    logger.log('Fetched all images', 'info');
     res.json(images);
   } catch (error) {
-    console.error("Error getting images:", error.message);
+    logger.error("Error getting images:", error.message);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

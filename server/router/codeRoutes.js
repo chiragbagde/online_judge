@@ -3,6 +3,7 @@ const axios = require("axios");
 const testcase = require("../models/TestCase");
 const submission = require("../models/Submission");
 const verifyToken = require("../verifyToken");
+const logger = require("../services/logger");
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ router.post("/run", verifyToken, async (req, res) => {
 
     res.status(200).json({ output });
   } catch (e) {
-    console.error(e);
+    logger.error(e);
     res.status(500).json({ success: false, error: e.message });
   }
 });
@@ -103,7 +104,7 @@ router.post("/submit",verifyToken, async (req, res) => {
         .json({ success: true, message: "All test cases passed!" });
     }
   } catch (error) {
-    console.error(error.message);
+    logger.error(error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });

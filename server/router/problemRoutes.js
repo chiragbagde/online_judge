@@ -6,6 +6,7 @@ const verifyToken = require("../verifyToken");
 const TestCase = require("../models/TestCase");
 const { sql } = require("../database/neon");
 const cache = require("../middleware/cache");
+const logger = require("../services/logger");
 
 const router = express.Router();
 
@@ -41,7 +42,7 @@ router.post("/create", verifyToken, async (req, res) => {
       newProblem,
     });
   } catch (e) {
-    console.error("Error creating problem:", e.message);
+    logger.error("Error creating problem:", e.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -171,7 +172,7 @@ router.post("/update", verifyToken, async (req, res) => {
       updateprob,
     });
   } catch (error) {
-    console.error("Error updating problem:", error.message);
+    logger.error("Error updating problem:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -187,7 +188,7 @@ router.get("/", verifyToken, cache("all_problems"), async (req, res) => {
       problems,
     });
   } catch (error) {
-    console.error("Error fetching problems:", error);
+    logger.error("Error fetching problems:", error);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -233,7 +234,7 @@ router.get("/daily-problem", verifyToken, cache("daily_problem"), async (req, re
       dailyProblem,
     });
   } catch (error) {
-    console.error("Error fetching daily problem:", error.message);
+    logger.error("Error fetching daily problem:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -251,7 +252,7 @@ router.post("/id", verifyToken, async (req, res) => {
       customprob,
     });
   } catch (error) {
-    console.error("Error getting problem:", error.message);
+    logger.error("Error getting problem:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -275,7 +276,7 @@ router.delete("/:id", verifyToken, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error deleting problem:", error.message);
+    logger.error("Error deleting problem:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -320,7 +321,7 @@ router.get("/admin/:id",verifyToken, async (req, res) => {
       problems,
     });
   } catch (error) {
-    console.error("Error fetching problems:", error.message);
+    logger.error("Error fetching problems:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
@@ -346,7 +347,7 @@ router.get("/admin/ids/:id",verifyToken, async (req, res) => {
       problems,
     });
   } catch (error) {
-    console.error("Error fetching problems:", error.message);
+    logger.error("Error fetching problems:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });

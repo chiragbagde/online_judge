@@ -6,6 +6,7 @@ const verifyToken = require("../verifyToken");
 const { sql } = require("../database/neon");
 const cache = require("../middleware/cache");
 const { redis } = require("../database/redis-store");
+const logger = require("../services/logger");
 
 const router = express.Router();
 
@@ -14,8 +15,8 @@ router.get("/", verifyToken, cache(() => "users"), async (req, res) => {
     const users = await sql`SELECT * FROM users`;
     res.json({ users: users });
   } catch {
-    console.log("Internal server error.");
-  }
+    logger.error("Internal server error.");
+  } 
 });
 
 router.post("/user-profile", verifyToken, async (req, res) => {
@@ -28,7 +29,7 @@ router.post("/user-profile", verifyToken, async (req, res) => {
       return res.status(400).send("User not found.");
     }
   } catch (error) {
-    console.log(error.message);
+    logger.error(error.message);
   }
 });
 
@@ -51,7 +52,7 @@ router.post("/update", verifyToken, async (req, res) => {
       updateUser,
     });
   } catch (error) {
-    console.log(error.message);
+    logger.error(error.message);
   }
 });
 
@@ -88,7 +89,7 @@ router.post("/update-role", verifyToken, async (req, res) => {
       updateUser,
     });
   } catch (error) {
-    console.log(error.message);
+    logger.error(error.message);
   }
 });
 
@@ -150,7 +151,7 @@ router.get("/admin/:id",verifyToken, async (req, res) => {
     users,
   });
 }catch (error) {
-    console.error("Error fetching problems:", error.message);
+    logger.error("Error fetching problems:", error.message);
     res.status(500).json({
       error: "Internal Server Error",
     });
