@@ -17,7 +17,7 @@ router.post("/run", verifyToken, async (req, res) => {
   try {
     let output;
       const { data } = await axios.post(
-        "https://code-execution-server-owik.onrender.com/api/run",
+        "http://localhost:3001/api/run",
         {
           code,
           input,
@@ -52,7 +52,7 @@ router.post("/submit",verifyToken, async (req, res) => {
 
         let outputResult;
         const { data } = await axios.post(
-          "https://code-execution-server-owik.onrender.com/api/run",
+          "http://localhost:3001/api/run",
           {
             code,
             input,
