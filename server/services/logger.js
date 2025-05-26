@@ -72,7 +72,7 @@ rotateTransport.on('rotate', async (oldFilename) => {
   try {
     await sendAllRotatedLogs();
 
-    await new Promise(resolve => setTimeout(resolsve, 100));
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const logData = await fs.readFile(oldFilename, 'utf8');
 

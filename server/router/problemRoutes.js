@@ -247,7 +247,7 @@ router.get("/daily-problem", verifyToken, cache("daily_problem"), async (req, re
   }
 });
 
-router.post("/id", verifyToken, cache("problem:" + req.body.id), async (req, res) => {
+router.post("/id", verifyToken, cache((req) =>"problem:" + req.body.id), async (req, res) => {
   const { id } = req.body;
 
   try {
