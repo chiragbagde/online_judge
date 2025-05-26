@@ -3,8 +3,11 @@ const { sql } = require("../database/neon");
 const router = express.Router();
 const verifyToken = require("../verifyToken");
 const logger = require("../services/logger");
+const { redis } = require("../database/redis-store");
 
 router.post("/create",verifyToken, async (req, res) => {
+  await redis.del(`notifications:${req.body.userId}`); // Invalidate cache for user's notifications
+
     const {message} = req.body;
 
     try {        
@@ -60,6 +63,8 @@ router.get("/",verifyToken, async (req, res) => {
 });
 
 router.post("/mark-as-read",verifyToken, async (req, res) => {
+  await redis.del(`notifications:${req.body.userId}`);
+
     const { userId, notificationId } = req.body;
 
     try {

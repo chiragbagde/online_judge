@@ -1,0 +1,95 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\.beb1879ef819a4a5fdf8fbf8c572c370ec825502-audit.json",
+    "files": [
+        {
+            "date": 1748229810396,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-53-30.log",
+            "hash": "0e89fa4fa9938524b4800801e1dbdef2912ef44638c73b20e423e0ab16f3ce60"
+        },
+        {
+            "date": 1748229840828,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-54-00.log",
+            "hash": "7efba210041eed3f4a81b1f49f83f8e0be934ed35cdd44269725cedd58292645"
+        },
+        {
+            "date": 1748229879312,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-54-39.log",
+            "hash": "d368254e0d64775999bf72288492834021418b94daa3894dd4dd8a279414f204"
+        },
+        {
+            "date": 1748229887356,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-54-47.log",
+            "hash": "9f222fa7a9e59c412c452404ea39f442ebbf5fc7e1ed9cdceb40dff85170a7ef"
+        },
+        {
+            "date": 1748229895440,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-54-55.log",
+            "hash": "4cb287e30cdbc45f157e21d413191af4ff02077e1fe4b1edea8e36fead83cc2c"
+        },
+        {
+            "date": 1748229903949,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-55-03.log",
+            "hash": "4198b02be1b5ca2f1a744702da2c2d9bfd04dd2c6e1dde961dee7dd1420e68c7"
+        },
+        {
+            "date": 1748229912557,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-55-12.log",
+            "hash": "068a0a43d5727681e05c3947facd582a72db1df3552fb276a1ca9fee8158f035"
+        },
+        {
+            "date": 1748229920868,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-55-20.log",
+            "hash": "ecde91a097e176c5ed733694ddf9a1b13f4a3c8566ea193f4f5680fe2826ddd3"
+        },
+        {
+            "date": 1748229928350,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-55-28.log",
+            "hash": "bfea35106afd75c3515cb8ecde9d5b3c0d27e9451472d86ee36374d8ed71d366"
+        },
+        {
+            "date": 1748229936795,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-55-36.log",
+            "hash": "e0c397aea2cacfbbeecfc6abd758af812c961af970890894e1d29dca48b70762"
+        },
+        {
+            "date": 1748229996481,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-56-36.log",
+            "hash": "dcfd054d437cc9b5ccfe21784582cb9b26c35cfa36ba79c0dbedeece793d77bb"
+        },
+        {
+            "date": 1748230022608,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-57-02.log",
+            "hash": "57648d8b9fa2c6c470e0f68012e166c2641300985863ce54377d057760cdce48"
+        },
+        {
+            "date": 1748230040453,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-57-20.log",
+            "hash": "def3e2a78a71b14cd8067f498dcbfed63322bfe1e1c94ab58f8d3e0971b04a97"
+        },
+        {
+            "date": 1748230047671,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-57-27.log",
+            "hash": "c60bf93eb31806aa43c057aacb27d91a5297d15ad9445504395fb94a83a7672b"
+        },
+        {
+            "date": 1748230090097,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-58-10.log",
+            "hash": "1e7175775a4e667e95da6e94f7def46c701b827ca809e892cb1bd236d1202353"
+        },
+        {
+            "date": 1748230114198,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-58-34.log",
+            "hash": "0873bb24a0f0cf668dc1c0e497f5fa3b1daf54473c4a1075da8749e9bdfe6edb"
+        },
+        {
+            "date": 1748230148535,
+            "name": "C:\\Users\\CHIRAG\\Desktop\\Algo_Uni\\algo_project\\online-compiler\\Online_Judge\\logs\\cache\\app-2025-05-26-08-59-08.log",
+            "hash": "c4c68d15f1640615d2086eb6f48da14df56aafbeaef80d03b3eb0b8b12203a61"
+        }
+    ],
+    "hashType": "sha256"
+}

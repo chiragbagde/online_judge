@@ -19,7 +19,7 @@ router.get("/", verifyToken, cache(() => "users"), async (req, res) => {
   } 
 });
 
-router.post("/user-profile", verifyToken, async (req, res) => {
+router.post("/user-profile", verifyToken, cache((req) => `user:${req.body.email}`), async (req, res) => {
   try {
     const { email } = req.body;
 

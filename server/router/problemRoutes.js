@@ -7,10 +7,13 @@ const TestCase = require("../models/TestCase");
 const { sql } = require("../database/neon");
 const cache = require("../middleware/cache");
 const logger = require("../services/logger");
+const { redis } = require("../database/redis-store");
 
 const router = express.Router();
 
 router.post("/create", verifyToken, async (req, res) => {
+  await redis.del(`all_problems`);
+
   try {
     const { statement, difficulty, topic, description, examples, testCases } =
       req.body;
@@ -113,6 +116,9 @@ router.post("/create/many", verifyToken, async (req, res) => {
 });
 
 router.post("/update", verifyToken, async (req, res) => {
+  await redis.del(`all_problems`);
+  await redis.del(`problem:${req.body.id}`);
+
   const {
     statement,
     difficulty,
@@ -241,7 +247,7 @@ router.get("/daily-problem", verifyToken, cache("daily_problem"), async (req, re
   }
 });
 
-router.post("/id", verifyToken, async (req, res) => {
+router.post("/id", verifyToken, cache("problem:" + req.body.id), async (req, res) => {
   const { id } = req.body;
 
   try {
@@ -260,6 +266,9 @@ router.post("/id", verifyToken, async (req, res) => {
 });
 
 router.delete("/:id", verifyToken, async (req, res) => {
+  await redis.del(`all_problems`);
+  await redis.del(`problem:${req.params.id}`);
+
   try {
     const id = req.params.id;
 

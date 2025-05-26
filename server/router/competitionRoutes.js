@@ -14,6 +14,8 @@ const logger = require("../services/logger");
 const router = express.Router();
 
 router.post("/create",verifyToken, async (req, res) => {
+  await redis.del(`competitions`);
+
   const { start_date, end_date, problems, title } = req.body;
 
   if (!(start_date && end_date && problems)) {
@@ -38,7 +40,10 @@ router.post("/create",verifyToken, async (req, res) => {
 });
 
 router.post("/update",verifyToken, async (req, res) => {
-  const { start_date, end_date, problems, id } = req.body;
+  await redis.del(`competitions`);
+  await redis.del(`competition:${req.body.id}`);
+
+  const { start_date, end_date, problems } = req.body;
 
   if (!id) {
     return res.status(400).send("Please enter an id to update");
@@ -140,6 +145,60 @@ router.get("/", verifyToken, cache(() => "competitions"), async (req, res) => {
     message: "competitions retreived successfully!",
     competitions,
   });
+});
+
+router.get("/user", verifyToken, cache((req) => `user_competitions:${req.params.id}`), async (req, res) => {
+  const { user_id, id } = req.body;
+
+  if (!id) {
+    return res.status(400).send("Please enter an id to update");
+  }
+  let competition_id;
+  try {
+    if (user_id !== undefined) {
+      competition_id = await competition.findById(id);
+      competition_id.registerUser(user_id);
+      await competition_id.save();
+    }
+    res.status(200).json({
+      message: "User added to competition successfully",
+      competition_id,
+    });
+  } catch (error) {
+    console.error("Error registering User:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
+});
+
+router.get("/all", verifyToken, cache("competitions"), async (req, res) => {
+  const { id } = req.body;
+
+  try {
+    const fetchedCompetition = await competition.findOne({ _id: id });
+    const currentDate = new Date();
+    if (
+      currentDate >= new Date(fetchedCompetition.start_date) &&
+      currentDate <= new Date(fetchedCompetition.end_date)
+    ) {
+      await fetchedCompetition.populate("problems");
+
+      res.status(200).json({
+        message: "Competition fetched successfully",
+        fetchedCompetition,
+      });
+    } else {
+      res.status(403).json({
+        error: "This competition is not currently active",
+      });
+    }
+  } catch (error) {
+    logger.error("Error getting competition:", error.message);
+    res.status(500).json({
+      error: "Internal Server Error",
+    });
+  }
 });
 
 router.post("/problem/id", verifyToken, async (req, res) => {
@@ -329,6 +388,9 @@ router.post("/id", verifyToken, async (req, res) => {
 });
 
 router.delete("/:id", verifyToken, async (req, res) => {
+  await redis.del(`competitions`);
+  await redis.del(`competition:${req.params.id}`);
+
   const id = req.params.id;
 
   const del = await competition.deleteOne({ _id: id });

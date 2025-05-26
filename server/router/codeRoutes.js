@@ -34,7 +34,7 @@ router.post("/run", verifyToken, async (req, res) => {
   }
 });
 
-router.post("/submit",verifyToken, async (req, res) => {
+router.post("/submit",verifyToken, cache("problem:" + p_id), async (req, res) => {
   const { lang = "cpp", code, p_id, u_id, c_id } = req.body;
 
   if (code === undefined) {
