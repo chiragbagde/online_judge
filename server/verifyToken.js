@@ -2,9 +2,9 @@ const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const parts = authHeader.split(" ");
+  const parts = authHeader?.split(" ");
 
-  const token = parts[1];
+  const token = parts?.[1];
 
   if (!token) {
     return res

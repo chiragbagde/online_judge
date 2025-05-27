@@ -2,108 +2,120 @@ const winston = require('winston');
 const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
 const fs = require('fs').promises;
-const axios = require('axios');
 require('dotenv').config();
+
+const getCircularReplacer = () => {
+  const seen = new WeakSet();
+  return (key, value) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+};
 
 const { combine, timestamp, json, printf, colorize } = winston.format;
 
 const consoleFormat = printf(({ level, message, timestamp, ...meta }) => {
-  return `${timestamp} [${level.toUpperCase()}]: ${message} ${JSON.stringify(meta)}`;
+  const safeMeta = JSON.parse(JSON.stringify(meta, getCircularReplacer()));
+  return `${timestamp} [${level.toUpperCase()}]: ${message} ${
+    Object.keys(safeMeta).length ? JSON.stringify(safeMeta, null, 2) : ''
+  }`;
 });
 
 const logLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
-
 const LOG_DIR = path.join(__dirname, '../../logs/cache');
 
-const url = `${process.env.LOGS_WORKER_BASE}/log?token=${process.env.LOGS_WORKER_TOKEN}`;
-
-async function sendAllRotatedLogs() {
+const ensureLogDir = async () => {
   try {
-    const files = await fs.readdir(LOG_DIR);
-    const logFiles = files
-      .filter(f => f.startsWith('app-') && f.includes('.log'))
-      .map(f => ({ name: f, fullPath: path.join(LOG_DIR, f) }));
-
-    logFiles.sort((a, b) => b.name.localeCompare(a.name));
-
-    for (let i = 0; i < logFiles.length; i++) {
-      const { name, fullPath } = logFiles[i];
-      try {
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        const stat = await fs.stat(fullPath);
-        const isEmpty = stat.size === 0;
-
-        if (isEmpty && i !== 0) {
-          await fs.unlink(fullPath);
-          console.log('🗑️ Deleted empty log file:', fullPath);
-          continue;
-        }
-
-        const logData = await fs.readFile(fullPath, 'utf8');
-        if (!logData.trim()) {
-          await fs.unlink(fullPath);
-          console.log('🗑️ Deleted blank log file:', fullPath);
-          continue;
-        }
-
-        await axios.post(url, { logs: logData });
-
-        console.log('✅ Log file sent:', fullPath);
-        await fs.unlink(fullPath);
-      } catch (err) {
-        console.error('❌ Failed to send log file:', fullPath, err.message);
-      }
-    }
-  } catch (err) {
-    console.error('Error reading log directory:', err.message);
+    await fs.mkdir(LOG_DIR, { recursive: true });
+  } catch (error) {
+    console.error('Error creating log directory:', error);
   }
 };
 
-const rotateTransport = new DailyRotateFile({
-  filename: path.join(__dirname, '../../logs/cache/app-%DATE%.log'),
-  datePattern: 'YYYY-MM-DD-HH-mm-ss',
-  maxSize: '1k',
-  maxFiles: '14d',
-  format: combine(timestamp(), json())
-});
+ensureLogDir();
 
-rotateTransport.on('rotate', async (oldFilename) => {
-  try {
-    await sendAllRotatedLogs();
-
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    const logData = await fs.readFile(oldFilename, 'utf8');
-
-
-    await axios.post(url, { logs: logData }, {
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    console.log('✅ Log file sent:', oldFilename);
-    await fs.unlink(oldFilename);
-  } catch (error) {
-    console.error('❌ Failed to send rotated log:', error.message);
-  }
-});
+const transports = [
+  new winston.transports.Console({
+    format: combine(
+      colorize(),
+      timestamp({
+        format: 'YYYY-MM-DD HH:mm:ss'
+      }),
+      consoleFormat
+    )
+  }),
+  new DailyRotateFile({
+    filename: path.join(LOG_DIR, 'error-%DATE%.log'),
+    datePattern: 'YYYY-MM-DD',
+    level: 'error',
+    maxSize: '20m',
+    maxFiles: '14d'
+  }),
+  new DailyRotateFile({
+    filename: path.join(LOG_DIR, 'combined-%DATE%.log'),
+    datePattern: 'YYYY-MM-DD',
+    maxSize: '20m',
+    maxFiles: '14d'
+  })
+];
 
 const logger = winston.createLogger({
   level: logLevel,
   format: combine(
-    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    timestamp({
+      format: 'YYYY-MM-DD HH:mm:ss'
+    }),
     json()
   ),
-  transports: [
-    rotateTransport,
-    new winston.transports.Console({
-      format: combine(
-        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        colorize(),
-        consoleFormat
-      )
-    })
-  ]
+  transports,
+  exitOnError: false
+});
+
+if (process.env.LOGS_WORKER_BASE && process.env.LOGS_WORKER_TOKEN) {
+  const axios = require('axios');
+  const url = `${process.env.LOGS_WORKER_BASE}/log?token=${process.env.LOGS_WORKER_TOKEN}`;
+  
+  class RemoteTransport extends winston.Transport {
+    constructor(opts) {
+      super(opts);
+      this.name = 'remoteTransport';
+      this.level = opts.level || 'info';
+    }
+
+    log(info, callback) {
+      setImmediate(() => {
+        this.emit('logged', info);
+      });
+
+      const cleanInfo = JSON.parse(JSON.stringify(info, getCircularReplacer()));
+      
+      axios.post(url, cleanInfo)
+        .catch(error => {
+          console.error('Error sending log to remote:', error.message);
+        })
+        .finally(() => {
+          callback();
+        });
+      
+      return true;
+    }
+  }
+
+  logger.add(new RemoteTransport({ level: 'info' }));
+}
+
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', { error: error.message, stack: error.stack });
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', { promise, reason: reason.message || reason });
 });
 
 module.exports = logger;

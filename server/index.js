@@ -17,7 +17,13 @@ const imageRoutes = require("./router/imageRoutes");
 const notificationsRoutes = require("./router/notificationRoutes");
 const workerRoutes = require("./router/workerRoutes");
 const listRoutes = require("./router/listRoutes");
+const { createBullBoard } = require('@bull-board/api');
+const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+const { ExpressAdapter } = require('@bull-board/express');
 const rateLimiter = require("express-rate-limit");
+const { submissionQueue } = require('./services/queue');
+require('./worker/codeRunnerWorker');
+
 
 if (!global.fetch) {
   global.fetch = (...args) =>
@@ -71,6 +77,7 @@ async function startServer() {
 
     const allowedOrigins = [
       "http://localhost:3000",
+      "http://localhost:5000",
       "https://crazy-codequest.netlify.app",
       "https://server-thrumming-waterfall-7530.fly.dev",
     ];
@@ -109,6 +116,24 @@ async function startServer() {
     app.use("/api/lists", listRoutes);
     app.use("/api/workers", workerRoutes);
 
+    app.use('/admin/queues', cors({
+      origin: true,
+      methods: ['GET', 'POST', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: true
+    }));
+
+    const serverAdapter = new ExpressAdapter();
+    serverAdapter.setBasePath('/admin/queues');
+    
+    createBullBoard({
+      queues: [new BullMQAdapter(submissionQueue)],
+      serverAdapter: serverAdapter,
+    });
+    
+    app.use('/admin/queues', serverAdapter.getRouter());
+    
+    app.use('/admin/queues/static', express.static('node_modules/@bull-board/ui/dist'));
     server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`✅ Server running on 0.0.0.0:${PORT}`);
     });    
@@ -136,7 +161,7 @@ async function startServer() {
     });
 
     retryDelay = 5000;
-    retryCount = 0; // Reset retry counter on success
+    retryCount = 0;
   } catch (error) {
     console.error("❌ Error starting server:", error.message);
     console.error(error.stack);
@@ -149,7 +174,7 @@ async function startServer() {
 
     console.log(`🔁 Retrying in ${retryDelay / 1000} seconds...`);
     setTimeout(() => {
-      retryDelay = Math.min(retryDelay * 2, 60000); // Exponential backoff up to 60s
+      retryDelay = Math.min(retryDelay * 2, 60000);
       startServer();
     }, retryDelay);
   }
