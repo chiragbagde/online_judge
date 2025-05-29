@@ -17,13 +17,7 @@ const imageRoutes = require("./router/imageRoutes");
 const notificationsRoutes = require("./router/notificationRoutes");
 const workerRoutes = require("./router/workerRoutes");
 const listRoutes = require("./router/listRoutes");
-const { createBullBoard } = require('@bull-board/api');
-const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
-const { ExpressAdapter } = require('@bull-board/express');
 const rateLimiter = require("express-rate-limit");
-const { submissionQueue } = require('./services/queue');
-require('./worker/codeRunnerWorker');
-
 
 if (!global.fetch) {
   global.fetch = (...args) =>
@@ -116,24 +110,24 @@ async function startServer() {
     app.use("/api/lists", listRoutes);
     app.use("/api/workers", workerRoutes);
 
-    app.use('/admin/queues', cors({
-      origin: true,
-      methods: ['GET', 'POST', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true
-    }));
-
-    const serverAdapter = new ExpressAdapter();
-    serverAdapter.setBasePath('/admin/queues');
-    
-    createBullBoard({
-      queues: [new BullMQAdapter(submissionQueue)],
-      serverAdapter: serverAdapter,
+    app.get('/health', async (req, res) => {
+        try {
+            await redisQueue.redis.ping();
+            res.status(200).json({ 
+                status: 'ok',
+                redis: 'connected',
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error('Health check failed:', error);
+            res.status(500).json({ 
+                status: 'error',
+                error: error.message,
+                timestamp: new Date().toISOString()
+            });
+        }
     });
-    
-    app.use('/admin/queues', serverAdapter.getRouter());
-    
-    app.use('/admin/queues/static', express.static('node_modules/@bull-board/ui/dist'));
+
     server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`✅ Server running on 0.0.0.0:${PORT}`);
     });    

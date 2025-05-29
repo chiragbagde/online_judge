@@ -94,13 +94,13 @@ if (process.env.LOGS_WORKER_BASE && process.env.LOGS_WORKER_TOKEN) {
 
       const cleanInfo = JSON.parse(JSON.stringify(info, getCircularReplacer()));
       
-      axios.post(url, cleanInfo)
-        .catch(error => {
-          console.error('Error sending log to remote:', error.message);
-        })
-        .finally(() => {
-          callback();
-        });
+      // axios.post(url, cleanInfo)
+      //   .catch(error => {
+      //     console.error('Error sending log to remote:', error.message);
+      //   })
+      //   .finally(() => {
+      //     callback();
+      //   });
       
       return true;
     }

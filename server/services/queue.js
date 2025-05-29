@@ -1,27 +1,40 @@
-const { Queue, QueueEvents } = require('bullmq');
-const IORedis = require('ioredis');
-const logger = require('./logger');
-const dotenv = require('dotenv');
-dotenv.config();
+class JobQueue {
+    constructor(concurrency = 4, maxSize = 10000) {
+      this.queue = [];
+      this.running = 0;
+      this.concurrency = concurrency;
+      this.maxSize = maxSize;
+    }
+  
+    add(job) {
+      if (this.queue.length >= this.maxSize) {
+        throw new Error("Queue is full");
+      }
+  
+      return new Promise((resolve, reject) => {
+        this.queue.push({ job, resolve, reject });
+        this.runNext();
+      });
+    }
+  
+    async runNext() {
+      if (this.running >= this.concurrency || this.queue.length === 0) return;
+  
+      const { job, resolve, reject } = this.queue.shift();
+      this.running++;
+  
+      try {
+        const result = await job();
+        resolve(result);
+      } catch (err) {
+        reject(err);
+      } finally {
+        this.running--;
+        this.runNext();
+      }
+    }
+  }
+  
 
-const connection = new IORedis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-  password: process.env.REDIS_PASSWORD,
-  tls: {},
-  maxRetriesPerRequest: null,
-});
-
-connection.on('connect', () => {
-    logger.info('✅ Connected to Redis in Queue');
-});
-
-connection.on('error', (err) => {
-    logger.error('❌ Redis connection error:', err);
-});
-
-const submissionQueue = new Queue('code_submissions', { connection });
-
-const queueEvents = new QueueEvents('code_submissions', { connection });
-
-module.exports = { submissionQueue, queueEvents };
+const jobQueue = new JobQueue(8, 10000);
+module.exports = jobQueue;
