@@ -71,6 +71,7 @@ async function startServer() {
 
     const allowedOrigins = [
       "http://localhost:3000",
+      "http://localhost:3001",
       "http://localhost:5000",
       "https://crazy-codequest.netlify.app",
       "https://server-thrumming-waterfall-7530.fly.dev",

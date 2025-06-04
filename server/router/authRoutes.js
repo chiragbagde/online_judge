@@ -9,6 +9,15 @@ const { redis } = require("../database/redis-store");
 const logger = require("../services/logger");
 
 const router = express.Router();
+const axios = require('axios');
+
+const MICROSOFT_CONFIG = {
+  clientId: process.env.MICROSOFT_CLIENT_ID,
+  clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
+  redirectUri: process.env.MICROSOFT_REDIRECT_URI || 'http://localhost:3001',
+  tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+  scope: 'openid profile email User.Read'
+};
 
 router.post("/register", async (req, res) => {
   let { firstname, lastname, email, password, username } = req.body;
@@ -259,6 +268,78 @@ router.post("/google-login", async (req, res) => {
   } catch (error) {
     logger.error("Google login error:", error.message);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post('/microsoft', async (req, res) => {
+  try {
+    const { access_token, id_token } = req.body;
+    
+    if (!access_token || !id_token) {
+      return res.status(400).json({ error: 'Missing required token data' });
+    }
+
+    const graphResponse = await axios.get('https://graph.microsoft.com/oidc/userinfo', {
+      headers: {
+        'Authorization': `Bearer ${access_token}`
+      }
+    });
+
+    console.log("Graph Response", graphResponse.data);
+    const { givenname: firstname, familyname: lastname, email, sub: microsoftId } = graphResponse.data;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Could not get email from Microsoft' });
+    }
+
+    const existingUser = await sql`SELECT * FROM users WHERE email = ${email}`.then(res => res[0]);
+    let user = existingUser;
+
+    console.log("Existing User", existingUser);
+    if (!existingUser) {
+      const username = email.split('@')[0];
+      
+      const hashedPassword = await bcrypt.hash(require('crypto').randomBytes(16).toString('hex'), 10);
+      
+      user = await sql`
+        INSERT INTO users (firstname, lastname, email, password, username, otp_verified, login_id, created_at, updated_at)
+        VALUES (${firstname}, ${lastname}, ${email}, ${hashedPassword}, ${username}, true, ${microsoftId}, NOW(), NOW())
+        RETURNING id, firstname, lastname, email, username, role, otp_verified
+      `.then(res => res[0]);
+    } else if (existingUser.login_id !== microsoftId) {
+      user = await sql`
+        UPDATE users 
+        SET login_id = ${microsoftId}, updated_at = NOW()
+        WHERE email = ${email}
+        RETURNING id, firstname, lastname, email,s username, role, otp_verified
+      `.then(res => res[0]);
+    }
+
+    const token = jwt.sign(
+      { user_id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || process.env.SECRET_KEY,
+      { expiresIn: '1d' }
+    );
+
+    res.status(200).json({
+      user: {
+        id: user.id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        otp_verified: user.otp_verified
+      },
+      token
+    });
+
+  } catch (error) {
+    console.error('Microsoft auth error:', error);
+    res.status(500).json({ 
+      error: 'Error authenticating with Microsoft',
+      details: error.message 
+    });
   }
 });
 
