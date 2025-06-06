@@ -17,6 +17,7 @@ const imageRoutes = require("./router/imageRoutes");
 const notificationsRoutes = require("./router/notificationRoutes");
 const workerRoutes = require("./router/workerRoutes");
 const listRoutes = require("./router/listRoutes");
+const blogRoutes = require("./router/blogRoutes");
 const rateLimiter = require("express-rate-limit");
 
 if (!global.fetch) {
@@ -41,7 +42,6 @@ let retryDelay = 5000;
 let retryCount = 0;
 const MAX_RETRIES = 5;
 
-// Helper function to clear model cache
 function clearRequireCacheForModels() {
   const modelPaths = [
     "./models/User",
@@ -75,19 +75,34 @@ async function startServer() {
       "http://localhost:5000",
       "https://crazy-codequest.netlify.app",
       "https://server-thrumming-waterfall-7530.fly.dev",
+      "https://codequest.cloud",
+      "https://www.codequest.cloud"
     ];
 
     const corsOptions = {
       origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin) return callback(null, true);
+        
+        const originHostname = new URL(origin).hostname;
+        const isAllowed = allowedOrigins.some(domain => {
+          const domainHostname = new URL(domain).hostname || domain;
+          return (
+            originHostname === domainHostname ||
+            originHostname.endsWith(`.${domainHostname}`)
+          );
+        });
+        
+        if (isAllowed) {
           callback(null, true);
         } else {
-          callback(new Error("CORS not allowed from this origin: " + origin));
+          console.error('CORS error: Origin not allowed -', origin);
+          callback(new Error('Not allowed by CORS'));
         }
       },
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
       credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
     };
 
     app.use(cors(corsOptions));
@@ -108,8 +123,10 @@ async function startServer() {
     app.use("/api/images", imageRoutes);
     app.use("/api/users", userRoutes);
     app.use("/api/notifications", notificationsRoutes);
+    app.use("/api/worker", workerRoutes);
     app.use("/api/lists", listRoutes);
     app.use("/api/workers", workerRoutes);
+    app.use("/api/blogs", blogRoutes);
 
     app.get('/health', async (req, res) => {
         try {
