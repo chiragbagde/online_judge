@@ -5,6 +5,9 @@ const submission = require("../models/Submission");
 const verifyToken = require("../verifyToken");
 const logger = require("../services/logger");
 const jobQueue = require("../services/queue");
+const dotenv = require("dotenv");
+
+dotenv.config();
 
 const router = express.Router();
 
@@ -18,7 +21,7 @@ router.post("/run", verifyToken, async (req, res) => {
   try {
     let output;
       const { data } = await jobQueue.add(async () => await axios.post(
-        "https://code-execution-server-owik.onrender.com/api/run",
+        process.env.CODE_EXECUTE_RUN,
         { code, input, lang }
       ));
 
@@ -49,7 +52,7 @@ router.post("/submit",verifyToken, async (req, res) => {
 
         let outputResult;
         const { data } = await jobQueue.add(async () => await axios.post(
-          "https://code-execution-server-owik.onrender.com/api/run",
+          process.env.CODE_EXECUTE_SUBMIT,
           { code, input, lang }
         ));
 
