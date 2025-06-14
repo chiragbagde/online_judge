@@ -4,6 +4,7 @@ const verifyToken = require('../verifyToken.js');
 const mongoose = require('mongoose');
 const logger = require('../services/logger.js');
 const isAuthorOrAdmin = require('../middleware/isAuthor.js');
+const cache = require('../middleware/cache.js');
 
 const router = express.Router();
 
@@ -113,7 +114,7 @@ const handleError = (res, error, message = 'Something went wrong') => {
   return res.status(500).json({ success: false, message });
 };
 
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, cache(() => "blogs"), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;

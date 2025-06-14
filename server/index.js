@@ -19,6 +19,7 @@ const workerRoutes = require("./router/workerRoutes");
 const listRoutes = require("./router/listRoutes");
 const blogRoutes = require("./router/blogRoutes");
 const rateLimiter = require("express-rate-limit");
+const communityRoutes = require("./router/communityRoutes");
 
 if (!global.fetch) {
   global.fetch = (...args) =>
@@ -127,7 +128,7 @@ async function startServer() {
     app.use("/api/lists", listRoutes);
     app.use("/api/workers", workerRoutes);
     app.use("/api/blogs", blogRoutes);
-
+    app.use("/api/community", communityRoutes);
     app.get('/health', async (req, res) => {
         try {
             await redisQueue.redis.ping();

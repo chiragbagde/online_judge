@@ -2,6 +2,7 @@
 const express = require("express");
 const problem = require("./../models/Problem");
 const user = require("./../models/User");
+const TopicCount = require("./../models/TopicCount");
 const verifyToken = require("../verifyToken");
 const TestCase = require("../models/TestCase");
 const { sql } = require("../database/neon");
@@ -10,6 +11,15 @@ const logger = require("../services/logger");
 const { redis } = require("../database/redis-store");
 
 const router = express.Router();
+
+const updateTopicCounts = async () => {
+  try {
+    await redis.del("topics");
+    await TopicCount.updateCounts();
+  } catch (error) {
+    logger.error("Error updating topic counts:", error);
+  }
+};
 
 router.post("/create", verifyToken, async (req, res) => {
   await redis.del(`all_problems`);
@@ -39,6 +49,8 @@ router.post("/create", verifyToken, async (req, res) => {
       { _id: { $in: testCaseIds } },
       { $set: { p_id: newProblem._id } }
     );
+
+    await updateTopicCounts();
 
     res.status(201).json({
       message: "Problem created successfully with test cases!",
@@ -172,6 +184,12 @@ router.post("/update", verifyToken, async (req, res) => {
 
   try {
     let updateprob = await problem.updateOne(filter, updatedDoc);
+    
+    if (topic !== undefined) {
+      console.log("updating topic counts");
+      
+      await updateTopicCounts();
+    }
 
     res.status(200).json({
       message: "Problem updated successfully",
@@ -204,15 +222,33 @@ router.get("/", verifyToken, cache("all_problems"), async (req, res) => {
 
 router.get("/topic-counts", verifyToken, cache("topics"), async (req, res) => {
   try {
-    const topicCounts = await problem.aggregate([
-      { $group: { _id: "$topic", count: { $sum: 1 } } },
-    ]);
+    const topicCounts = await TopicCount.find({}, { _id: 0, topic: 1, count: 1, description: 1 })
+      .sort({ count: -1 });
+
+    if (topicCounts.length === 0) {
+      await updateTopicCounts();
+      const newCounts = await TopicCount.find({}, { _id: 0, topic: 1, count: 1, description: 1 })
+        .sort({ count: -1 });
+      return res.status(200).json({
+        message: "Topic counts retrieved successfully!",
+        topicCounts: newCounts.map(tc => ({ 
+          _id: tc.topic, 
+          count: tc.count,
+          description: tc.description 
+        }))
+      });
+    }
 
     res.status(200).json({
       message: "Topic counts retrieved successfully!",
-      topicCounts,
+      topicCounts: topicCounts.map(tc => ({ 
+        _id: tc.topic, 
+        count: tc.count,
+        description: tc.description 
+      }))
     });
   } catch (error) {
+    logger.error("Error fetching topic counts:", error);
     res.status(500).json({ message: "Server error", error });
   }
 });
@@ -279,6 +315,8 @@ router.delete("/:id", verifyToken, async (req, res) => {
         message: "Invalid id",
       });
     } else {
+      await updateTopicCounts();
+      
       res.status(200).json({
         message: "problems deleted successfully",
         del,
