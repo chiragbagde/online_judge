@@ -5,8 +5,54 @@ const mongoose = require('mongoose');
 const logger = require('../services/logger.js');
 const isAuthorOrAdmin = require('../middleware/isAuthor.js');
 const cache = require('../middleware/cache.js');
+const multer = require('multer');
+const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const { R2BucketClient } = require('../database/cloudfare-s3.js');
+const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+router.post('/image-upload', upload.single('file'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    }
+
+    const { blogId } = req.body;
+    const file = req.file;
+    const fileName = `${uuidv4()}-${file.originalname}`;
+    const bucketName =  's3-images';
+
+    try {
+        const command = new PutObjectCommand({
+            Bucket: bucketName,
+            Key: fileName,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+        });
+
+        await R2BucketClient.send(command);
+
+        const publicUrl = `https://pub-e50618dea2894262b915f5578f961203.r2.dev/${fileName}`;
+
+        if (blogId) {
+            await Blog.findByIdAndUpdate(blogId, { featuredImage: publicUrl });
+            logger.info(`Updated featured image for blog ${blogId}`);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Image uploaded successfully',
+            url: publicUrl
+        });
+
+    } catch (error) {
+        logger.error('Error uploading image to R2:', error);
+        res.status(500).json({ success: false, message: 'Failed to upload image' });
+    }
+});
 
 router.get('/trending', async (req, res) => {
   try {
@@ -145,7 +191,6 @@ router.get('/', verifyToken, cache(() => "blogs"), async (req, res) => {
       .sort({ publishedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('author', 'name email')
       .lean();
       
     const total = await Blog.countDocuments({ isPublished: true });

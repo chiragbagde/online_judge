@@ -154,17 +154,18 @@ async function startServer() {
     server.on("error", async (err) => {
       if (err.code === "EADDRINUSE") {
         console.error(`❌ Port ${PORT} is already in use.`);
-        console.log("🔄 Attempting to reset the server...");
+        console.log("🔄 Attempting to free the port and restart...");
 
-        const killCommand = `npx kill-port ${PORT}`;
         const { exec } = require("child_process");
+        const killCommand = `npx kill-port ${PORT}`;
+
         exec(killCommand, (error, stdout, stderr) => {
           if (error) {
-            console.error("❌ Failed to kill the process using the port:", error.message);
+            console.error(`❌ Failed to kill the process on port ${PORT}.`, stderr || error.message);
             process.exit(1);
           } else {
-            console.log(`✅ Port ${PORT} has been freed. Restarting the server...`);
-            setTimeout(startServer, 1000);
+            console.log(`✅ Port ${PORT} has been freed. Exiting to allow nodemon to restart.`);
+            process.exit(0);
           }
         });
       } else {
@@ -222,41 +223,17 @@ async function resetMongoose() {
   }
 }
 
-mongoose.connection.on("disconnected", async () => {
-  console.warn("⚠️ MongoDB disconnected! Restarting app...");
-  try {
-    if (server && server.listening) {
-      await new Promise((resolve, reject) => {
-        server.close((err) => {
-          if (err) return reject(err);
-          console.log("🛑 Express server closed.");
-          resolve();
-        });
-      });
-    }
-
-    await resetMongoose();
-
-    startServer();
-  } catch (error) {
-    console.error("❌ Error while restarting server:", error.message);
-    console.error(error.stack);
-    process.exit(1);
-  }
-});
+// This is too aggressive and prevents Mongoose's built-in reconnection logic from working.
+// Mongoose will handle reconnection attempts based on the options in db.js.
+// mongoose.connection.on("disconnected", () => {
+//   console.warn("⚠️ MongoDB disconnected! Exiting. Nodemon will restart the server.");
+//   process.exit(1);
+// });
 
 // cron.schedule("* * * * *", async () => {
 //   try {
 //     console.log("Cron job running: hitting GET /");
-
-//     const response = await axios.get(
-//       "http://localhost:3001/api"
-//     );
-//     console.log("Server response:", response.data);
-//   } catch (error) {
-//     console.error("Error calling GET /:", error.message);
-//   }
-// });
+// ... existing code ...
 
 
 

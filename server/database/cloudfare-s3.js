@@ -10,5 +10,16 @@ const r2Client = new S3Client({
   forcePathStyle: true,
 });
 
+const R2BucketClient = new S3Client({
+  region: "auto",
+  endpoint: process.env.S3_CLOUD_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEYID,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+  },
+  forcePathStyle: true,
+});
 
-module.exports = { r2Client };
+
+
+module.exports = { r2Client, R2BucketClient };

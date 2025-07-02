@@ -14,7 +14,6 @@ router.get('/posts', verifyToken, async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     const filter = req.query.filter || 'recent'; // recent, following, popular
-    console.log(req.user, "called");
     
 
     let query = {};
@@ -225,6 +224,24 @@ router.delete('/posts/:postId/comments/:commentId', verifyToken, async (req, res
   }
 });
 
+// @route   GET /api/community/follow/status/:userId
+// @desc    Check if current user is following another user
+// @access  Private
+
+router.get('/follow/status/:userId', verifyToken, async (req, res) => {
+  try {
+    const follow = await Follow.findOne({
+      follower: req.user.id,
+      following: req.params.userId
+    });
+
+    res.json({ isFollowing: !!follow });
+  } catch (error) {
+    console.error('Error checking follow status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // @route   POST /api/community/follow
 // @desc    Follow or unfollow a user
 // @access  Private
@@ -277,22 +294,7 @@ router.post('/follow', [
   }
 });
 
-// @route   GET /api/community/follow/status/:userId
-// @desc    Check if current user is following another user
-// @access  Private
-router.get('/follow/status/:userId', verifyToken, async (req, res) => {
-  try {
-    const follow = await Follow.findOne({
-      follower: req.user.id,
-      following: req.params.userId
-    });
 
-    res.json({ isFollowing: !!follow });
-  } catch (error) {
-    console.error('Error checking follow status:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
 
 // @route   GET /api/community/following
 // @desc    Get list of users being followed by current user
@@ -322,6 +324,62 @@ router.get('/followers', verifyToken, async (req, res) => {
     res.json(followers.map(f => f.follower));
   } catch (error) {
     console.error('Error fetching followers list:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   POST /api/community/posts/follow
+// @desc    Follow/Unfollow a user
+// @access  Private
+router.post('/posts/follow', [
+  verifyToken,
+  check('userId', 'User ID is required').not().isEmpty()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { userId } = req.body;
+    if (req.user.id === userId) {
+      return res.status(400).json({ message: 'You cannot follow yourself' });
+    }
+
+    let follow = await Follow.findOne({ follower: req.user.id, following: userId });
+
+    if (follow) {
+      await follow.remove();
+      return res.json({ message: 'User unfollowed', isFollowing: false });
+    } else {
+      follow = new Follow({
+        follower: req.user.id,
+        following: userId
+      });
+      await follow.save();
+      return res.json({ message: 'User followed', isFollowing: true });
+    }
+  } catch (error) {
+    console.error('Error toggling follow status:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// @route   GET /api/community/posts/follow/status/:userId
+// @desc    Check if the current user is following another user
+// @access  Private
+router.get('/posts/follow/status/:userId', verifyToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (req.user.id === userId) {
+      return res.json({ isFollowing: false }); // A user cannot follow themselves
+    }
+
+    const follow = await Follow.findOne({ follower: req.user.id, following: userId });
+    res.json({ isFollowing: !!follow });
+  } catch (error) {
+    console.error('Error checking follow status:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
