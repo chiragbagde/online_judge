@@ -160,7 +160,12 @@ const handleError = (res, error, message = 'Something went wrong') => {
   return res.status(500).json({ success: false, message });
 };
 
-router.get('/', verifyToken, cache(() => "blogs"), async (req, res) => {
+const blogListCacheKeyGenerator = (req) => {
+  const { page = 1, limit = 10, search = '', tag = '', author = '' } = req.query;
+  return `blogs:page=${page}:limit=${limit}:search=${search}:tag=${tag}:author=${author}`;
+};
+
+router.get('/', verifyToken, cache(blogListCacheKeyGenerator), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
