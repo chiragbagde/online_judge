@@ -6,7 +6,7 @@ const logger = require('../services/logger.js');
 const isAuthorOrAdmin = require('../middleware/isAuthor.js');
 const cache = require('../middleware/cache.js');
 const multer = require('multer');
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { R2BucketClient } = require('../database/cloudfare-s3.js');
 const { v4: uuidv4 } = require('uuid');
 
@@ -51,6 +51,29 @@ router.post('/image-upload', upload.single('file'), async (req, res) => {
     } catch (error) {
         logger.error('Error uploading image to R2:', error);
         res.status(500).json({ success: false, message: 'Failed to upload image' });
+    }
+});
+
+router.delete('/image/:fileName', verifyToken, async (req, res) => {
+    try {
+        const { fileName } = req.params;
+        
+        const command = new DeleteObjectCommand({
+            Bucket: 's3-images',
+            Key: fileName,
+        });
+
+        await R2BucketClient.send(command);
+        logger.info(`Deleted image from R2: ${fileName}`);
+
+        res.status(200).json({
+            success: true,
+            message: 'Image deleted successfully'
+        });
+
+    } catch (error) {
+        logger.error('Error deleting image from R2:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete image' });
     }
 });
 
@@ -301,23 +324,64 @@ router.post('/id', verifyToken, isAuthorOrAdmin, async (req, res) => {
   }
 });
 
-router.delete('/id', async (req, res) => {
+router.delete('/:id', verifyToken, isAuthorOrAdmin, async (req, res) => {
   try {
-    const blog = await Blog.findById(req.params.id);
+    const { id } = req.params;
+    const blog = await Blog.findById(id);
     
     if (!blog) {
       return res.status(404).json({ success: false, message: 'Blog not found' });
     }
+
+    const extractImageUrls = (content) => {
+      const imageRegex = /!\[.*?\]\((https:\/\/pub-e50618dea2894262b915f5578f961203\.r2\.dev\/[^)]+)\)/g;
+      const urls = [];
+      let match;
+      
+      while ((match = imageRegex.exec(content)) !== null) {
+        urls.push(match[1]);
+      }
+      
+      return urls;
+    };
+
+    const deleteImages = async (imageUrls) => {
+      const deletePromises = imageUrls
+        .filter(url => url && url.includes('r2.dev'))
+        .map(async (url) => {
+          try {
+            const fileName = url.split('/').pop();
+            const command = new DeleteObjectCommand({
+              Bucket: 's3-images',
+              Key: fileName,
+            });
+            await R2BucketClient.send(command);
+            logger.info(`Deleted image from R2: ${fileName}`);
+          } catch (error) {
+            logger.error(`Failed to delete image from R2: ${url}`, error);
+          }
+        });
+      
+      await Promise.allSettled(deletePromises);
+    };
+
+    const imagesToDelete = [];
     
-    if (blog.author.toString() !== id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized' });
+    if (blog.featuredImage) {
+      imagesToDelete.push(blog.featuredImage);
     }
+
+    const contentImages = extractImageUrls(blog.content);
+    imagesToDelete.push(...contentImages);
+
+    await deleteImages(imagesToDelete);
+    await Blog.findByIdAndDelete(id);
     
-    await blog.remove();
-    
-    res.json({ success: true, data: {} });
+    logger.info(`Blog deleted successfully: ${id}`);
+    res.json({ success: true, message: 'Blog deleted successfully' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    logger.error('Error deleting blog:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete blog' });
   }
 });
 
@@ -388,6 +452,25 @@ router.post('/:id/like', async (req, res) => {
   }
 });
 
+router.post('/:id/view', async (req, res) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) {
+      return res.status(404).json({ success: false, message: 'Blog not found' });
+    }
+    
+    Blog.updateOne({ _id: req.params.id }, { $inc: { views: 1 } }).exec();
+
+    res.status(200).json({ success: true, message: 'View count incremented' });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(400).json({ success: false, message: 'Invalid blog post ID' });
+    }
+    console.error('Error incrementing view count:', error);
+    res.status(202).json({ success: true, message: 'View increment accepted' });
+  }
+});
+
 router.get('/slug/:slug', async (req, res) => {
   try {
     console.log(req.params.slug, "sluf");
@@ -420,11 +503,6 @@ router.get('/:id', async (req, res) => {
         success: false,
         message: 'You do not have permission to view this post'
       });
-    }
-
-    if (!req.user || (blog.author && blog.author._id.toString() !== req.user._id.toString())) {
-      blog.views = (blog.views || 0) + 1;
-      await blog.save();
     }
 
     res.json({ 
