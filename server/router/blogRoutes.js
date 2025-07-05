@@ -9,6 +9,7 @@ const multer = require('multer');
 const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { R2BucketClient } = require('../database/cloudfare-s3.js');
 const { v4: uuidv4 } = require('uuid');
+const { sql } = require('../database/neon.js');
 
 const router = express.Router();
 
@@ -193,10 +194,19 @@ router.get('/', verifyToken, cache(blogListCacheKeyGenerator), async (req, res) 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const { tag, search, author } = req.query;
+    const { tag, search } = req.query;
+    const user = await sql`SELECT * FROM users WHERE id = ${req.user.id}`;
+    const adminUser = user[0]?.role;
 
     // Build query
-    const query = { isPublished: true };
+    let query = {};
+    if(adminUser === 'admin'){
+      // Admin can see all blogs (published + unpublished)
+      query = {};
+    }else{
+      // Non-admin users can only see published blogs
+      query = { isPublished: true };
+    }
     
     if (tag) {
       query.tags = tag;
@@ -209,10 +219,7 @@ router.get('/', verifyToken, cache(blogListCacheKeyGenerator), async (req, res) 
         { excerpt: { $regex: search, $options: 'i' } }
       ];
     }
-    
-    if (author) {
-      query.author = mongoose.Types.ObjectId(author);
-    }
+
 
     const blogs = await Blog.find(query)
       .populate('author', 'name email avatar')
@@ -221,7 +228,7 @@ router.get('/', verifyToken, cache(blogListCacheKeyGenerator), async (req, res) 
       .limit(limit)
       .lean();
       
-    const total = await Blog.countDocuments({ isPublished: true });
+    const total = await Blog.countDocuments(query);
     
     res.json({
       success: true,
@@ -471,10 +478,16 @@ router.post('/:id/view', async (req, res) => {
   }
 });
 
-router.get('/slug/:slug', async (req, res) => {
+router.get('/slug/:slug', verifyToken, async (req, res) => {
   try {
-    console.log(req.params.slug, "sluf");
-    const blog = await Blog.findOne({ slug: req.params.slug, isPublished: true })
+    const user = await sql`SELECT * FROM users WHERE id = ${req.user.id}`;
+    const adminUser = user[0]?.role;
+    let blog = {};
+    if(adminUser === 'admin'){
+      blog = await Blog.findOne({ slug: req.params.slug });
+    }else{
+      blog = await Blog.findOne({ slug: req.params.slug, isPublished: true });
+    }
       
     if (!blog) {
       return res.status(404).json({ success: false, message: 'Blog not found' });
