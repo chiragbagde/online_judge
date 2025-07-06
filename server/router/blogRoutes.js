@@ -10,6 +10,7 @@ const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { R2BucketClient } = require('../database/cloudfare-s3.js');
 const { v4: uuidv4 } = require('uuid');
 const { sql } = require('../database/neon.js');
+const { redis } = require('../database/redis-store.js');
 
 const router = express.Router();
 
@@ -189,6 +190,18 @@ const blogListCacheKeyGenerator = (req) => {
   return `blogs:page=${page}:limit=${limit}:search=${search}:tag=${tag}:author=${author}`;
 };
 
+const invalidateBlogCache = async (operation = '') => {
+  try {
+    const keys = await redis.keys('blogs:*');
+    if (keys.length > 0) {
+      await redis.del(...keys);
+      logger.info(`Invalidated ${keys.length} blog cache keys ${operation ? `after ${operation}` : ''}`);
+    }
+  } catch (cacheError) {
+    logger.error(`Error invalidating blog cache ${operation ? `after ${operation}` : ''}:`, cacheError);
+  }
+};
+
 router.get('/', verifyToken, cache(blogListCacheKeyGenerator), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -198,13 +211,10 @@ router.get('/', verifyToken, cache(blogListCacheKeyGenerator), async (req, res) 
     const user = await sql`SELECT * FROM users WHERE id = ${req.user.id}`;
     const adminUser = user[0]?.role;
 
-    // Build query
     let query = {};
     if(adminUser === 'admin'){
-      // Admin can see all blogs (published + unpublished)
       query = {};
     }else{
-      // Non-admin users can only see published blogs
       query = { isPublished: true };
     }
     
@@ -220,16 +230,15 @@ router.get('/', verifyToken, cache(blogListCacheKeyGenerator), async (req, res) 
       ];
     }
 
-
     const blogs = await Blog.find(query)
       .populate('author', 'name email avatar')
-      .sort({ publishedAt: -1, createdAt: -1 })
+      .sort({ updatedAt: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
       
     const total = await Blog.countDocuments(query);
-    
+
     res.json({
       success: true,
       data: blogs,
@@ -268,6 +277,8 @@ router.post('/', async (req, res) => {
     });
     
     await blog.save();
+    
+    await invalidateBlogCache('creation');
     
     res.status(201).json({ success: true, data: blog });
   } catch (error) {
@@ -315,6 +326,8 @@ router.post('/id', verifyToken, isAuthorOrAdmin, async (req, res) => {
     blog.updatedAt = new Date();
 
     await blog.save();
+
+    await invalidateBlogCache('update');
 
     return res.json({ 
       success: true, 
@@ -383,6 +396,8 @@ router.delete('/:id', verifyToken, isAuthorOrAdmin, async (req, res) => {
 
     await deleteImages(imagesToDelete);
     await Blog.findByIdAndDelete(id);
+    
+    await invalidateBlogCache('deletion');
     
     logger.info(`Blog deleted successfully: ${id}`);
     res.json({ success: true, message: 'Blog deleted successfully' });
