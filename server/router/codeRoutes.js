@@ -49,21 +49,28 @@ router.post("/submit",verifyToken, async (req, res) => {
       const promises = filtered_testcase.map(async (testcase, index) => {
         const input = testcase["input"];
         const output = testcase["output"];
-
         let outputResult;
-        const { data } = await jobQueue.add(async () => await axios.post(
-          process.env.CODE_EXECUTE_SUBMIT,
-          { code, input, lang }
-        ));
-
-        outputResult = data.output;
-
-        if (outputResult.trim() !== output.trim()) {
-          failedTestCases.push({
-            index: index + 1,
-            expected: output,
-            actual: outputResult.trim(),
-          });
+        try {
+          const { data } = await jobQueue.add(async () => await axios.post(
+            process.env.CODE_EXECUTE_SUBMIT,
+            { code, input, lang }
+          ));
+          outputResult = data.output;
+          if (outputResult.trim() !== output.trim()) {
+            console.log(testcase);
+            
+            failedTestCases.push({
+              index: index + 1,
+              expected: output,
+              actual: outputResult.trim(),
+              input: input,
+            });
+          }
+        } catch (err) {
+          if (err.response && err.response.status === 429) {
+            return;
+          }
+          throw err;
         }
       });
 
@@ -83,6 +90,8 @@ router.post("/submit",verifyToken, async (req, res) => {
     };
 
     if (failedTestCases.length > 0) {
+      console.log(failedTestCases);
+      
       await submission.create(submission_body);
       return res.status(200).json({
         success: false,

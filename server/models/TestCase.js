@@ -14,6 +14,10 @@ const TestCaseSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  description: {
+    type: String,
+    default: null,
+  },
 });
 
 const TestCase = mongoose.models.testcase || mongoose.model("testcase", TestCaseSchema);

@@ -407,4 +407,19 @@ router.delete("/:id", verifyToken, async (req, res) => {
   }
 });
 
+router.post("/delete-many", verifyToken, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: "No IDs provided" });
+  }
+  await redis.del(`competitions`);
+  try {
+    const result = await competition.deleteMany({ _id: { $in: ids } });
+    res.status(200).json({ message: "Competitions deleted", result });
+  } catch (error) {
+    logger.error("Bulk delete error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 module.exports = router;

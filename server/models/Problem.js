@@ -12,6 +12,7 @@ const problemSchema = mongoose.Schema(
     competition_problem: { type: Boolean, default: false },
     input: { type: String, default: null },
     dailyDate: { type: Date, default: null },
+    snippet: { type: String, default: null },
     examples: [
       {
         input: { type: String, default: null },

@@ -202,14 +202,23 @@ const invalidateBlogCache = async (operation = '') => {
   }
 };
 
+const getUserRole = async (userId) => {
+  try {
+    const user = await sql`SELECT * FROM users WHERE id = ${userId}`;
+    return user[0]?.role;
+  } catch (error) {
+    logger.error('Error fetching user role:', error);
+    return null;
+  }
+};
+
 router.get('/', verifyToken, cache(blogListCacheKeyGenerator), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
     const { tag, search } = req.query;
-    const user = await sql`SELECT * FROM users WHERE id = ${req.user.id}`;
-    const adminUser = user[0]?.role;
+    const adminUser = await getUserRole(req.user.id);
 
     let query = {};
     if(adminUser === 'admin'){
@@ -495,8 +504,7 @@ router.post('/:id/view', async (req, res) => {
 
 router.get('/slug/:slug', verifyToken, async (req, res) => {
   try {
-    const user = await sql`SELECT * FROM users WHERE id = ${req.user.id}`;
-    const adminUser = user[0]?.role;
+    const adminUser = await getUserRole(req.user.id);
     let blog = {};
     if(adminUser === 'admin'){
       blog = await Blog.findOne({ slug: req.params.slug });
@@ -514,7 +522,7 @@ router.get('/slug/:slug', verifyToken, async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id)
 
@@ -524,9 +532,12 @@ router.get('/:id', async (req, res) => {
         message: 'Blog post not found' 
       });
     }
+    const adminUser = await getUserRole(req.user.id);
+    console.log(blog, adminUser, req.user.id);
+    
 
     if (!blog.isPublished && 
-        (!req.user || (blog.author && blog.author._id.toString() !== req.user._id.toString()))) {
+        (!(adminUser === 'admin') || (blog.author && blog.author !== req.user.id))) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to view this post'

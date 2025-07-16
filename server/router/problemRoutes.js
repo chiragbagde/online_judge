@@ -330,6 +330,22 @@ router.delete("/:id", verifyToken, async (req, res) => {
   }
 });
 
+router.post("/delete-many", verifyToken, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: "No IDs provided" });
+  }
+  await redis.del(`all_problems`);
+  try {
+    const result = await problem.deleteMany({ _id: { $in: ids } });
+    await updateTopicCounts();
+    res.status(200).json({ message: "Problems deleted", result });
+  } catch (error) {
+    logger.error("Bulk delete error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 router.get("/search/:search",verifyToken, async (req, res) => {
   const search = req.params.search;
 

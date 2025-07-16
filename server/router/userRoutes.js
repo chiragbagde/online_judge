@@ -131,6 +131,20 @@ router.post("/create",verifyToken, async (req, res) => {
   });
 });
 
+router.post("/delete-many", verifyToken, async (req, res) => {
+  const { ids } = req.body;
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ message: "No IDs provided" });
+  }
+  try {
+    const result = await User.deleteMany({ _id: { $in: ids } });
+    res.status(200).json({ message: "Users deleted", result });
+  } catch (error) {
+    logger.error("Bulk delete error:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 router.get("/admin/:id",verifyToken, async (req, res) => {
   try{
   const id = req.params.id;
