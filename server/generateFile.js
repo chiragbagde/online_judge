@@ -8,6 +8,7 @@ if (!fs.existsSync(dirCodes)) {
   fs.mkdirSync(dirCodes, { recursive: true });
 }
 
+
 const generateFile = async (language, code) => {
   const fileId = uuid();
   const filename = `${fileId}.${language}`;
