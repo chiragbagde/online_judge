@@ -12,7 +12,7 @@ A robust and scalable backend service for an online coding platform that support
 - **Rate Limiting**: Built-in protection against abuse
 - **Queue System**: Job queue for handling code execution requests
 - **File Storage**: Integration with S3-compatible storage for problem assets
-- **Real-time Notifications**: For submission results and system events
+- **Real-time Notifications**: For submission results and system events.
 
 ## Tech Stack
 
