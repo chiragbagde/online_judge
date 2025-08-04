@@ -183,4 +183,4 @@ For support, please open an issue in the repository or contact the development t
 
 More questions solutions and blogs and ai resources to be added soon.
 
-Other exciting features coming soon
+Other exciting features coming so
