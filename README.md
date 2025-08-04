@@ -182,3 +182,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 For support, please open an issue in the repository or contact the development team.
 
 More questions solutions and blogs and ai resources to be added soon.
+
+Other exciting features coming soon
