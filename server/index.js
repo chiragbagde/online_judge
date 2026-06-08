@@ -66,6 +66,11 @@ async function startServer() {
     app.use(limiter);
     app.set("trust proxy", 1);
 
+    app.use((req, _res, next) => {
+      logger.info(`${req.method} ${req.path}`);
+      next();
+    });
+
     app.get("/", (req, res) => res.send("Running!"));
     app.get("/health", (req, res) =>
       res.status(200).json({ status: "ok", timestamp: new Date().toISOString() })
@@ -82,6 +87,8 @@ async function startServer() {
     app.use("/api/notifications", notificationsRoutes);
     app.use("/api/lists", listRoutes);
     app.use("/api/workers", workerRoutes);
+
+    app.use((req, res) => res.status(404).json({ error: `Cannot ${req.method} ${req.path}` }));
 
     server = app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on 0.0.0.0:${PORT}`);
